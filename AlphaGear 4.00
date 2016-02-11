@@ -1,0 +1,795 @@
+AG4.name = 'AlphaGearX2'
+AG4.version = '4.00'
+AG4.account = nil
+AG4.character = nil
+AG4.init = false
+AG4.setdata = {}
+local L, ZOSF = AG4[GetCVar('language.2')] or AG4.en, zo_strformat
+local QUALITY = {[0]={0.65,0.65,0.65,1},[1]={1,1,1,1},[2]={0.17,0.77,0.05,1},[3]={0.22,0.57,1,1},[4]={0.62,0.18,0.96,1},[5]={0.80,0.66,0.10,1}}
+local QUALITYHEX = {[0]='B3B3B3',[1]='FFFFFF',[2]='2DC50E',[3]='3A92FF',[4]='A02EF7',[5]='EECA2A'}
+local MENU, SELECT, DRAGINFO, MAXSLOT, TTANI, ACTIONBAR, ACTIVESET = { nr = nil, type = nil, copy = nil }, { on = false }, {}, 16, false, false
+local EM, WM, SM = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER
+local DUPSLOTS = { 1, 2, 3, 4, 13, 14 }
+local SLOTS = {
+	{EQUIP_SLOT_MAIN_HAND,'mainhand','MainHand'},
+	{EQUIP_SLOT_OFF_HAND,'offhand','OffHand'},
+	{EQUIP_SLOT_BACKUP_MAIN,'mainhand','BackupMain'},
+	{EQUIP_SLOT_BACKUP_OFF,'offhand','BackupOff'},
+	{EQUIP_SLOT_HEAD,'head','Head'},
+	{EQUIP_SLOT_CHEST,'chest','Chest'},
+	{EQUIP_SLOT_LEGS,'legs','Leg'},
+	{EQUIP_SLOT_SHOULDERS,'shoulders','Shoulder'},
+	{EQUIP_SLOT_FEET,'feet','Foot'},
+	{EQUIP_SLOT_WAIST,'belt','Belt'},
+	{EQUIP_SLOT_HAND,'hands','Glove'},
+	{EQUIP_SLOT_NECK,'neck','Neck'},
+	{EQUIP_SLOT_RING1,'ring','Ring1'},
+	{EQUIP_SLOT_RING2,'ring','Ring2'}
+	-- ZO_CharacterEquipmentSlots
+}
+
+function AG4.DrawMenu(c,line)
+	AG_PanelMenu:ToggleHidden()
+	AG_PanelMenu:SetAnchor(3,c,6,0,0)
+	local h, c = 0
+	for x,z in pairs(line) do
+		c = AG_PanelMenu:GetChild(x)
+		if z == false then
+			c:SetHeight(0)
+			c:SetHidden(true)
+		elseif z == true then
+			h = h + 30
+			c:SetHeight(30)
+			c:SetHidden(false)
+		end
+	end
+	AG_PanelMenu:SetHeight(h + 20)
+end
+function AG4.MenuAction(nr)
+	if nr == 1 then
+		MENU.copy = MENU.nr
+	elseif nr == 2 and MENU.copy then
+		if MENU.type == 1 then for z = 1,14 do
+			AG4.setdata[MENU.nr].Gear[z] = AG4.setdata[MENU.copy].Gear[z]
+			AG4.ShowButton(WM:GetControlByName('AG_Button_Gear_'..MENU.nr..'_'..z))
+		end	else for z = 1,6 do
+			AG4.setdata[MENU.nr].Skill[z] = AG4.setdata[MENU.copy].Skill[z]
+			AG4.ShowButton(WM:GetControlByName('AG_Button_Skill_'..MENU.nr..'_'..z))
+		end end
+	elseif nr == 3 then
+		if MENU.type == 1 then for z = 1,14 do
+			AG4.setdata[MENU.nr].Gear[z] = { id = 0, link = 0 }
+			AG4.ShowButton(WM:GetControlByName('AG_Button_Gear_'..MENU.nr..'_'..z))
+		end	elseif MENU.type == 2 then for z = 1,6 do
+			AG4.setdata[MENU.nr].Skill[z] = {0,0,0}
+			AG4.ShowButton(WM:GetControlByName('AG_Button_Skill_'..MENU.nr..'_'..z))
+		end else
+			AG4.setdata[MENU.nr].Set = { text = 0, gear = 0, skill = {0,0} }
+			AG4.UpdateUI(MENU.nr,MENU.nr)
+		end
+	elseif nr == 4 then
+		WM:GetControlByName('AG_SetButton_'..MENU.nr..'_Box'):SetHidden(true)
+		local c = WM:GetControlByName('AG_SetButton_'..MENU.nr..'_BoxEdit')
+		c:SetHidden(false)
+		c:TakeFocus()
+	elseif nr == 5 then
+		for x = 1,14 do
+			if GetItemInstanceId(BAG_WORN,SLOTS[x][1]) then
+				AG4.setdata[MENU.nr].Gear[x] = { id = Id64ToString(GetItemUniqueId(BAG_WORN,SLOTS[x][1])), link = GetItemLink(BAG_WORN,SLOTS[x][1]) }
+			else AG4.setdata[MENU.nr].Gear[x] = { id = 0, link = 0 } end
+			AG4.ShowButton(WM:GetControlByName('AG_Button_Gear_'..MENU.nr..'_'..x))
+		end
+	end
+end
+
+function AG4.DrawSkillButton(nr)
+	local c, s, l, bg
+	s = WM:CreateControl('AG_Selector_Skill_'..nr, AG_PanelSkillPanelScrollChild, CT_BUTTON)
+	s:SetAnchor(3,nil,3,0,45*(nr-1))
+	s:SetDimensions(299,44)
+	s:SetClickSound('Click')
+	s:EnableMouseButton(2,true)
+	s:SetNormalTexture('AlphaGearX2/grey.dds')
+	s:SetMouseOverTexture('AlphaGearX2/light.dds')
+	s.data = { header = '|c00DD00'..L.Head.Skill..nr..'|r', info = L.Selector.Skill }
+	s:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+	s:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+	s:SetHandler('OnMouseDown',function(self,button)
+		if button == 2 then
+			AG4.DrawMenu(self,{true,(MENU.copy and MENU.type == 2),false,false,true})
+			MENU.nr = nr
+			MENU.type = 2
+		elseif button == 1 then
+			if SELECT.on and SELECT.mode > 1 then
+				AG4.setdata[SELECT.nr].Set.skill[SELECT.mode-1] = nr
+				WM:GetControlByName('AG_SetButton_'..SELECT.nr..'_'..SELECT.mode):SetText(nr)
+			else AG4.LoadBar(nr) end
+		end
+	end)
+	l = WM:CreateControl('AG_Selector_Skill_'..nr..'_Label', s, CT_LABEL)
+	l:SetAnchor(3,s,3,0,0)
+	l:SetDrawTier(1)
+	l:SetDimensions(44,44)
+	l:SetHorizontalAlignment(1)
+	l:SetVerticalAlignment(1)
+	l:SetFont('AGFontBold')
+	l:SetColor(1,1,1,0.8)
+	l:SetText(nr)
+	for x = 1,6 do
+		c = WM:CreateControl('AG_Button_Skill_'..nr..'_'..x, s, CT_BUTTON)
+		c:SetAnchor(2,s,2,46+42*(x-1),0)
+		c:SetDrawTier(1)
+		c:SetDimensions(40,40)
+		c:SetClickSound('Click')
+		c:EnableMouseButton(2,true)
+		c:SetMouseOverTexture('AlphaGearX2/light.dds')
+		c:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+		c:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+		c:SetHandler('OnReceiveDrag',function(self) AG4.OnDragReceive(self) end)
+		c:SetHandler('OnMouseDown',function(self,button)
+			if button == 2 then
+				AG4.setdata[nr].Skill[x] = {0,0,0}
+				AG4.ShowButton(self)
+			elseif button == 1 then AG4.LoadSkill(nr,x) end
+		end)
+		bg = WM:CreateControl('AG_Button_Skill_'..nr..'_'..x..'Bg', c, CT_BACKDROP)
+		bg:SetAnchor(128,c,128,0,0)
+		bg:SetDimensions(44,44)
+		bg:SetCenterColor(0,0,0,0.2)
+		bg:SetEdgeColor(0,0,0,0)
+		bg:SetEdgeTexture('',1,1,2)
+		bg:SetInsets(2,2,-2,-2)
+		AG4.ShowButton(c)
+	end
+end
+function AG4.DrawGearButton(nr)
+	local c, s, l, bg
+	s = WM:CreateControl('AG_Selector_Gear_'..nr, AG_PanelGearPanelScrollChild, CT_BUTTON)
+	s:SetAnchor(3,nil,3,0,45*(nr-1))
+	s:SetDimensions(635,44)
+	s:SetClickSound('Click')
+	s:EnableMouseButton(2,true)
+	s:SetNormalTexture('AlphaGearX2/grey.dds')
+	s:SetMouseOverTexture('AlphaGearX2/light.dds')
+	s.data = { header = '|c00DD00'..L.Head.Gear..nr..'|r', info = L.Selector.Gear }
+	s:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+	s:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+	s:SetHandler('OnMouseDown',function(self,button)
+		if button == 2 then
+			AG4.DrawMenu(self,{true,(MENU.copy and MENU.type == 1),true,false,true})
+			MENU.nr = nr
+			MENU.type = 1
+		elseif button == 1 then
+			if SELECT.on and SELECT.mode == 1 then
+				AG4.setdata[SELECT.nr].Set.gear = nr
+				WM:GetControlByName('AG_SetButton_'..SELECT.nr..'_'..SELECT.mode):SetText(nr)
+			else AG4.LoadGear(nr) end
+		end
+	end)
+	l = WM:CreateControl('AG_Selector_Gear_'..nr..'_Label', s, CT_LABEL)
+	l:SetAnchor(3,s,3,0,0)
+	l:SetDrawTier(1)
+	l:SetDimensions(44,44)
+	l:SetHorizontalAlignment(1)
+	l:SetVerticalAlignment(1)
+	l:SetFont('AGFontBold')
+	l:SetColor(1,1,1,0.8)
+	l:SetText(nr)
+	for x = 1,14 do
+		c = WM:CreateControl('AG_Button_Gear_'..nr..'_'..x, s, CT_BUTTON)
+		c:SetAnchor(2,s,2,46+42*(x-1),0)
+		c:SetDrawTier(1)
+		c:SetDimensions(40,40)
+		c:SetClickSound('Click')
+		c:EnableMouseButton(2,true)
+		c:SetMouseOverTexture('AlphaGearX2/light.dds')
+		c:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+		c:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+		c:SetHandler('OnReceiveDrag',function(self) AG4.OnDragReceive(self) end)
+		c:SetHandler('OnMouseDown',function(self,button)
+			if button == 2 then
+				AG4.setdata[nr].Gear[x] = {id = 0, link = 0}
+				AG4.ShowButton(self)
+			elseif button == 1 then AG4.LoadItem(nr,x) end
+		end)
+		bg = WM:CreateControl('AG_Button_Gear_'..nr..'_'..x..'Bg', c, CT_BACKDROP)
+		bg:SetAnchor(128,c,128,0,0)
+		bg:SetDimensions(44,44)
+		bg:SetCenterColor(0,0,0,0.2)
+		bg:SetEdgeColor(0,0,0,0)
+		bg:SetEdgeTexture('',1,1,2)
+		bg:SetInsets(2,2,-2,-2)
+		AG4.ShowButton(c)
+	end
+end
+function AG4.DrawSet(nr)
+	if WM:GetControlByName('AG_SetSelector_'..nr) then return end
+	local p, c, l, s, eb = AG_PanelSetPanelScrollChild
+	s = WM:CreateControl('AG_SetSelector_'..nr, p, CT_BUTTON)
+	s:SetAnchor(3,nil,3,0,81*(nr-1))
+	s:SetDimensions(311,76)
+	s:SetClickSound('Click')
+	s:EnableMouseButton(2,true)
+	s:SetNormalTexture('AlphaGearX2/grey.dds')
+	s:SetMouseOverTexture('AlphaGearX2/light.dds')
+	s:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+	s:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+	s:SetHandler('OnMouseDown',function(self,button)
+		if button == 2 then
+			AG4.DrawMenu(self,{false,false,false,true,true})
+			MENU.nr = nr
+			MENU.type = 3
+		elseif button == 1 then
+			AG4.LoadSet(nr)
+		end
+	end)
+	l = WM:CreateControl('AG_SetSelector_'..nr..'_Label', s, CT_LABEL)
+	l:SetAnchor(3,s,3,0,0)
+	l:SetDrawTier(1)
+	l:SetDimensions(44,44)
+	l:SetHorizontalAlignment(1)
+	l:SetVerticalAlignment(1)
+	l:SetFont('AGFontBold')
+	l:SetColor(1,1,1,0.8)
+	l:SetText(nr)
+	l = WM:CreateControl('AG_SetSelector_'..nr..'_KeyBind', s, CT_LABEL)
+	l:SetAnchor(9,s,9,-140,0)
+	l:SetDrawTier(1)
+	l:SetDimensions(135,44)
+	l:SetHorizontalAlignment(2)
+	l:SetVerticalAlignment(1)
+	l:SetFont('AGFontSmall')
+	l:SetColor(1,1,1,0.5)
+	for x = 1,3 do
+		c = WM:CreateControl('AG_SetButton_'..nr..'_'..x, s, CT_BUTTON)
+		c:SetAnchor(3,s,3,185+(x-1)*42,2)
+		c:SetDrawTier(1)
+		c:SetDimensions(40,40)
+		c:SetClickSound('Click')
+		c:SetHorizontalAlignment(1)
+		c:SetVerticalAlignment(1)
+		c:SetFont('AGFontBold')
+		c:SetNormalFontColor(1,1,1,0.6)
+		c:EnableMouseButton(2,true)
+		c.menu = x
+		c:SetNormalTexture('AlphaGearX2/dark.dds')
+		c:SetMouseOverTexture('AlphaGearX2/light.dds')
+		c:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+		c:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+		c:SetHandler('OnMouseDown',function(self,button)
+			if button == 2 then
+				if x == 1 then AG4.setdata[nr].Set.gear = 0
+				elseif x == 2 then AG4.setdata[nr].Set.skill[1] = 0
+				elseif x == 3 then AG4.setdata[nr].Set.skill[2] = 0 end
+				AG4.UpdateUI(nr,nr)
+			elseif button == 1 then
+				AG4.SetConnect(x,1)
+				SELECT = { on = true, mode = x, nr = nr }
+				zo_callLater(function() EM:RegisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP,function()
+					AG4.SetConnect(x,2)
+					SELECT = {on = false}
+					EM:UnregisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP) end)
+				end, 500)
+			end
+		end)
+	end
+	c = WM:CreateControl('AG_SetButton_'..nr..'_Box', s, CT_BUTTON)
+	c:SetAnchor(3,s,3,2,44)
+	c:SetDrawTier(1)
+	c:SetClickSound('Click')
+	c:SetDimensions(307,30)
+	c:EnableMouseButton(2,true)
+	c:SetHorizontalAlignment(0)
+	c:SetVerticalAlignment(1)
+	c:SetFont('AGFont')
+	c:SetNormalFontColor(1,1,1,0.8)
+	c:SetNormalTexture('AlphaGearX2/dark.dds')
+	c:SetMouseOverTexture('AlphaGearX2/light.dds')
+	c:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
+	c:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
+	c:SetHandler('OnMouseDown',function(self,button)
+		if button == 2 then
+			MENU.nr = nr
+			MENU.type = 3
+			AG4.MenuAction(4)
+		elseif button == 1 then AG4.LoadSet(nr) end
+	end)
+	eb = WM:CreateControlFromVirtual('AG_SetButton_'..nr..'_BoxEdit', s, 'ZO_DefaultEditForBackdrop')
+	eb:SetAnchor(3,s,3,10,48)
+	eb:SetDimensions(300,30)
+	eb:SetFont('AGFont')
+	eb:SetColor(1,1,1,0.8)
+	eb:SetMaxInputChars(75)
+	eb:SetHidden(true)
+	eb:SetHandler('OnFocusLost',function(self) self:SetHidden(true); c:SetHidden(false) end)
+	eb:SetHandler('OnEscape',function(self) self:LoseFocus() end)
+	eb:SetHandler('OnEnter',function(self)
+		c:SetHidden(false)
+		AG4.setdata[nr].Set.text = self:GetText()
+		self:LoseFocus()
+		AG4.UpdateUI(nr,nr)
+	end)
+end
+function AG4.UpdateUI(from,to)
+	if not from then from = 1 end
+	if not to then to = MAXSLOT end
+	local text
+	for x = from, to do
+		if AG4.setdata[x].Set.text == 0 then text = 'Set '..x else text = AG4.setdata[x].Set.text end
+		local header, tt, c = '|c00DD00'..text..'|r', ''
+		WM:GetControlByName('AG_SetSelector_'..x).data = { header = header, info = L.Set }
+		WM:GetControlByName('AG_SetSelector_'..x..'_KeyBind'):SetText(AG4.GetKey('AG4_SET_'..x))
+		c = WM:GetControlByName('AG_SetButton_'..x..'_1')
+		if AG4.setdata[x].Set.gear ~= 0 then c:SetText(AG4.setdata[x].Set.gear) else c:SetText('') end
+		c.data = { header = header, info = L.SetConnector[1] }
+		c = WM:GetControlByName('AG_SetButton_'..x..'_2')
+		if AG4.setdata[x].Set.skill[1] ~= 0 then c:SetText(AG4.setdata[x].Set.skill[1]) else c:SetText('') end
+		c.data = { header = header, info = L.SetConnector[2] }
+		c = WM:GetControlByName('AG_SetButton_'..x..'_3')
+		if AG4.setdata[x].Set.skill[2] ~= 0 then c:SetText(AG4.setdata[x].Set.skill[2]) else c:SetText('') end
+		c.data = { header = header, info = L.SetConnector[3] }
+		c = WM:GetControlByName('AG_SetButton_'..x..'_Box')
+		c:SetText('  '..text)
+		c.data = { header = header, info = L.Edit }
+		WM:GetControlByName('AG_SetButton_'..x..'_BoxEdit'):SetText(text)
+	end
+end
+
+function AG4.GetKey(keyStr)
+	local modifier = ''
+	local l,c,a = GetActionIndicesFromName(keyStr)
+	local key,m1,m2,m3,m4 = GetActionBindingInfo(l,c,a,1)
+	if key ~= KEY_INVALID then
+		local shift = ZO_Keybindings_DoesKeyMatchAnyModifiers(KEY_SHIFT,m1,m2,m3,m4)
+		local ctrl = ZO_Keybindings_DoesKeyMatchAnyModifiers(KEY_CTRL,m1,m2,m3,m4)
+		local alt = ZO_Keybindings_DoesKeyMatchAnyModifiers(KEY_ALT,m1,m2,m3,m4)
+		if alt then modifier = modifier..string.format('%s-',string.upper(string.sub(GetString(SI_KEYCODEALT),1,8)))
+		elseif ctrl then modifier = modifier..string.format('%s-',string.upper(string.sub(GetString(SI_KEYCODECTRL),1,8)))
+		elseif shift then modifier = modifier..string.format('%s-',string.upper(string.sub(GetString(SI_KEYCODESHIFT),1,8))) end
+		return modifier..GetKeyName(key)
+	else return '' end
+end
+function AG4.GetButton(c)
+	local res, name = {}, {string.match(c:GetName(),'AG_Button_(%a+)_(%d+)_(%d+)')}
+	table.insert(res, name[1])
+	table.insert(res, tonumber(name[2]))
+	table.insert(res, tonumber(name[3]))
+	return unpack(res)
+end
+function AG4.Tooltip(c, visible)
+	function FadeIn(control)
+		TTANI = ANIMATION_MANAGER:CreateTimeline()
+		local fadeIn = TTANI:InsertAnimation(ANIMATION_ALPHA,control,500)
+		fadeIn:SetAlphaValues(0,1)
+		fadeIn:SetDuration(150)
+		TTANI:PlayFromStart()
+	end
+	if not c then return end
+	if visible then
+		local type, nr, slot = AG4.GetButton(c)
+		if type == 'Gear' then
+			if AG4.setdata[nr].Gear[slot].link == 0 then return end
+			c.text = ItemTooltip
+			InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+			c.text:SetLink(AG4.setdata[nr].Gear[slot].link)
+			ZO_ItemTooltip_ClearCondition(c.text)
+			ZO_ItemTooltip_ClearCharges(c.text)
+		elseif type == 'Skill' then
+			if AG4.setdata[nr].Skill[slot][1] == 0 then return end
+			c.text = SkillTooltip
+			InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+			c.text:SetSkillAbility(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3])
+		else
+			if c.data == nil then return end
+			c.text = InformationTooltip
+			InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+			if c.data.header then c.text:AddLine(c.data.header,'ZoFontWinH4') end
+			SetTooltipText(c.text,c.data.info)
+		end
+		if c.data and c.data.hint then c.text:AddLine('\n'..c.data.hint,'ZoGameFont') end
+		c.text:SetAlpha(0)
+		c.text:SetHidden(false)
+		FadeIn(c.text)
+	else
+		if c.text == nil then return end
+		ClearTooltip(c.text)
+		if TTANI then TTANI:Stop() end
+		c.text:SetHidden(true)
+		c.text = nil
+	end
+end
+function AG4.ShowButton(c)
+	if not c then return false end
+	local type, nr, slot = AG4.GetButton(c)
+	if type == 'Skill' then
+		if AG4.setdata[nr].Skill[slot][1] ~= 0 then
+			local _,icon = GetSkillAbilityInfo(AG4.setdata[nr].Skill[slot][1],AG4.setdata[nr].Skill[slot][2],AG4.setdata[nr].Skill[slot][3])
+			c:SetNormalTexture(icon)
+			c.data = { hint = '\n'..L.Button[type] }
+		else
+			c:SetNormalTexture()
+			c.data = nil
+		end
+	else
+		if AG4.setdata[nr].Gear[slot].link ~= 0 then
+			c:SetNormalTexture(GetItemLinkInfo(AG4.setdata[nr].Gear[slot].link))
+			local color = QUALITY[GetItemLinkQuality(AG4.setdata[nr].Gear[slot].link)]
+			c:GetNamedChild('Bg'):SetCenterColor(color[1],color[2],color[3],0.75)
+			c.data = { hint = '\n'..L.Button[type] }
+		else
+			c:SetNormalTexture('esoui/art/characterwindow/gearslot_'..SLOTS[slot][2]..'.dds')
+			c:GetNamedChild('Bg'):SetCenterColor(0,0,0,0.2)
+			c.data = nil
+		end
+	end
+end
+function AG4.OnDragReceive(self)
+	local function Contains(tab,item) for _, value in pairs(tab) do if value == item then return true end end return false end
+	local function CheckItems(nr,target)
+		local clear, et1, et2 = false, GetItemLinkEquipType(AG4.setdata[nr].Gear[1].link), GetItemLinkEquipType(AG4.setdata[nr].Gear[3].link)
+		if DRAGINFO.type == EQUIP_TYPE_TWO_HAND then
+			if target == 1 then clear = 2 elseif target == 3 then clear = 4 end
+		elseif DRAGINFO.type == EQUIP_TYPE_ONE_HAND or DRAGINFO.type == EQUIP_TYPE_OFF_HAND then
+			if target == 2 and et1 == EQUIP_TYPE_TWO_HAND then clear = 1 elseif target == 4 and et2 == EQUIP_TYPE_TWO_HAND then clear = 3 end
+		end
+		if clear then
+			AG4.setdata[nr].Gear[clear] = { id = 0, link = 0 }
+			AG4.ShowButton(WM:GetControlByName('AG_Button_Gear_'..nr..'_'..clear))
+		end
+		for _,slot in pairs(DUPSLOTS) do
+			if AG4.setdata[nr].Gear[slot].id == DRAGINFO.uid then
+				AG4.setdata[nr].Gear[slot] = { id = 0, link = 0 }
+				AG4.ShowButton(WM:GetControlByName('AG_Button_Gear_'..nr..'_'..slot))
+				return
+			end
+		end
+	end
+	local function CheckSkills(nr)
+		for x = 1,5 do
+			if AG4.setdata[nr].Skill[x][1] == DRAGINFO.skill and AG4.setdata[nr].Skill[x][2] == DRAGINFO.line and AG4.setdata[nr].Skill[x][3] == DRAGINFO.id then
+				AG4.setdata[nr].Skill[x] = {0,0,0}
+				AG4.ShowButton(WM:GetControlByName('AG_Button_Skill_'..nr..'_'..x))
+				return
+			end
+		end
+	end
+	local function DragItem(btn)
+		local _, nr, slot = AG4.GetButton(btn)
+		if DRAGINFO.uid and Contains(DRAGINFO.slot,slot)then
+			if Contains(DUPSLOTS,slot) then CheckItems(nr,slot) end
+			AG4.setdata[nr].Gear[slot] = { id = DRAGINFO.uid, link = DRAGINFO.link }
+			AG4.ShowButton(btn)
+			ClearCursor()
+			PlaySound('Tablet_PageTurn')
+		end
+	end
+	local function DragSkill(btn)
+		local _, nr, slot = AG4.GetButton(btn)
+		if DRAGINFO.skill then
+			if (not DRAGINFO.ultimate and slot < 6) or (DRAGINFO.ultimate and slot == 6) then
+				if slot < 6 then CheckSkills(nr) end
+				AG4.setdata[nr].Skill[slot] = { DRAGINFO.skill, DRAGINFO.line, DRAGINFO.id }
+				AG4.ShowButton(btn)
+				ClearCursor()
+				PlaySound('Tablet_PageTurn')
+			end
+		end
+	end
+	local cursor = GetCursorContentType()
+	if cursor == MOUSE_CONTENT_INVENTORY_ITEM or cursor == MOUSE_CONTENT_EQUIPPED_ITEM then DragItem(self)
+	elseif cursor == MOUSE_CONTENT_ACTION then DragSkill(self) end
+end
+function AG4.OnSkillDragStart(control)
+    if GetCursorContentType() == MOUSE_CONTENT_EMPTY and not AG_Panel:IsHidden() then
+		local _,_,_,_,ultimate,active = GetSkillAbilityInfo(control.skillType, control.lineIndex, control.index)
+		if active then
+			DRAGINFO.skill		= control.skillType
+			DRAGINFO.line		= control.lineIndex
+			DRAGINFO.id			= control.index
+			DRAGINFO.ultimate	= ultimate
+			DRAGINFO.source 	= control
+			DRAGINFO.slot 		= {1,2,3,4,5}
+			if ultimate then DRAGINFO.slot = {6} end
+			AG4.SetCallout('Skill',1)
+			control:RegisterForEvent(EVENT_CURSOR_DROPPED, function() AG4.SetCallout('Skill',0) end)
+		end
+    end
+end
+function AG4.SetCallout(panel, mode)
+	for a = 1, MAXSLOT do
+		for _,b in pairs(DRAGINFO.slot) do
+			WM:GetControlByName('AG_Button_'..panel..'_'..a..'_'..b..'Bg'):SetEdgeColor(0,1,0,mode)
+		end
+	end
+	if mode == 0 then
+		DRAGINFO.source:UnregisterForEvent(EVENT_CURSOR_DROPPED)
+		DRAGINFO = {}
+	end
+end
+function AG4.SetConnect(parent, mode)
+	local col, p = {'green','grey'}, {'Gear','Skill','Skill'}
+	for nr = 1, MAXSLOT do
+		WM:GetControlByName('AG_Selector_'..p[parent]..'_'..nr):SetNormalTexture('AlphaGearX2/'..col[mode]..'.dds')
+	end
+end
+function AG4.GetItemFromBag(id)
+	if not id then return false end
+	local bag = SHARED_INVENTORY:GenerateFullSlotData(nil,BAG_BACKPACK)
+	for slot,data in pairs(bag) do if id == Id64ToString(data.uniqueId) then return slot end end
+	return false
+end
+function AG4.LoadItem(nr,slot)
+	if not nr or not slot then return end
+	if AG4.setdata[nr].Gear[slot].id ~= 0 then
+		if Id64ToString(GetItemUniqueId(BAG_WORN,SLOTS[slot][1])) ~= AG4.setdata[nr].Gear[slot].id then
+			local bagSlot = AG4.GetItemFromBag(AG4.setdata[nr].Gear[slot].id)
+			if bagSlot then EquipItem(BAG_BACKPACK,bagSlot,SLOTS[slot][1])
+			else
+				for _,x in pairs(DUPSLOTS) do
+					if Id64ToString(GetItemUniqueId(BAG_WORN,x)) == AG4.setdata[nr].Gear[slot].id then
+						EquipItem(BAG_WORN,x,SLOTS[slot][1])
+						return
+					end
+				end
+				d(ZOSF(L.NotFound,AG4.setdata[nr].Gear[slot].link))
+			end
+		end
+	end
+end
+function AG4.LoadSkill(nr,slot)
+    if not nr or not slot or AG4.setdata[nr].Skill[slot][1] == 0 then return end
+	local slotted = GetAssignedSlotFromSkillAbility(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3])
+	if not slotted or slotted ~= slot + 2 then
+		SlotSkillAbilityInSlot(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3], slot + 2)
+	end
+end
+function AG4.LoadBar(nr)
+	if not nr then return end
+	for slot = 1,6 do AG4.LoadSkill(nr,slot) end
+end
+function AG4.LoadGear(nr)
+	if not nr then return end
+	for x = 1,14 do AG4.LoadItem(nr,x) end
+end
+
+function AG4.LoadSet(nr)
+	if not nr then return end
+	ACTIVESET = nr
+	local pair,_ = GetActiveWeaponPairInfo()
+	if AG4.setdata[nr].Set.gear > 0 then AG4.LoadGear(AG4.setdata[nr].Set.gear) end
+	if pair == 1 then
+		ACTIONBAR = 2
+		if AG4.setdata[nr].Set.skill[1] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[1]) end
+	else
+		ACTIONBAR = 1
+		if AG4.setdata[nr].Set.skill[2] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[2]) end
+	end
+end
+function AG4.OnItemDragStart(invSlot)
+    if GetCursorContentType() == MOUSE_CONTENT_EMPTY and not AG_Panel:IsHidden() then
+		local bag, slot
+		if invSlot.dataEntry then bag, slot = invSlot.dataEntry.data.bagId, invSlot.dataEntry.data.slotIndex
+		else bag, slot = invSlot.bagId, invSlot.slotIndex end
+		local _,_,_,_,_,et = GetItemInfo(bag, slot)
+		if et ~= EQUIP_TYPE_INVALID then
+			local gear = {
+				[EQUIP_TYPE_HEAD] = { 5 },
+				[EQUIP_TYPE_CHEST] = { 6 },
+				[EQUIP_TYPE_LEGS] = { 7 },
+				[EQUIP_TYPE_SHOULDERS] = { 8 },
+				[EQUIP_TYPE_FEET] = { 9 },
+				[EQUIP_TYPE_WAIST] = { 10 },
+				[EQUIP_TYPE_HAND] = { 11 },
+				[EQUIP_TYPE_NECK] = { 12 },
+				[EQUIP_TYPE_RING] = { 13, 14 },
+				[EQUIP_TYPE_MAIN_HAND] = { 1, 3 },
+				[EQUIP_TYPE_ONE_HAND] = { 1, 2, 3, 4 },
+				[EQUIP_TYPE_TWO_HAND] = { 1, 3 },
+				[EQUIP_TYPE_OFF_HAND] = { 2, 4 },
+			}
+			DRAGINFO.link = GetItemLink(bag, slot)
+			DRAGINFO.uid = Id64ToString(GetItemUniqueId(bag, slot))
+			DRAGINFO.type = et
+			DRAGINFO.slot = gear[et]
+			DRAGINFO.source = invSlot
+			AG4.SetCallout('Gear',1)
+			invSlot:RegisterForEvent(EVENT_CURSOR_DROPPED, function() AG4.SetCallout('Gear',0) end)
+		end
+    end
+end
+function AG4.ShowMain()
+	SM:ToggleTopLevel(AG_Panel)
+	if not AG_Panel:IsHidden() then AG4.UpdateUI() end
+end
+function AG4.SetPosition(parent,pos)
+	AG_Panel:ClearAnchors()
+	AG_Panel:SetAnchor(8,parent,2,pos,0)
+end
+function AG4.ResetPosition()
+	AG_Panel:ClearAnchors()
+	AG_Panel:SetAnchor(128,GuiRoot,128,0,0)
+end
+function AG4.Swap(eventCode,isHotbarSwap)
+    if isHotbarSwap and not IsBlockActive()then
+		if ACTIONBAR and ACTIVESET and AG4.setdata[ACTIVESET].Set.skill[ACTIONBAR] > 0 then
+			AG4.LoadBar(AG4.setdata[ACTIVESET].Set.skill[ACTIONBAR])
+			if ACTIONBAR == 1 then ACTIONBAR = 2 else ACTIONBAR = 1 end
+		end
+    end
+	-- AG4.Charge()
+end
+function AG4.DrawInventory(vis)
+	local tex = 'AlphaGearX2/hl.dds'
+	for slot,control in pairs(inv)do
+		if vis==true or vis==false then
+			BG[slot]:SetHidden(vis)
+			BG[slot].con:SetHidden(vis)
+		else
+			BG[slot]=WM:CreateControl("AG_InvBg"..slot,control,CT_TEXTURE)
+			BG[slot]:SetHidden(true)
+			BG[slot]:SetDrawLevel(1)
+			BG[slot]:SetTexture("AlphaGear/icon/hole.dds")
+			BG[slot]:SetColor(1,1,1,1)
+			BG[slot]:SetAnchorFill()
+			local c=control:GetNamedChild("DropCallout")
+			c:ClearAnchors()
+			c:SetAnchor(TOP,control,TOP,0,2)
+			c:SetDimensions(52,52)
+			c:SetTexture(tex)
+			c:SetDrawLayer(0)
+			local c=control:GetNamedChild("Highlight")
+			if c then
+				c:SetTexture(tex)
+				c:SetDimensions(52,52)
+				c:SetAnchor(TOP,control,TOP,0,2)
+			end
+			BG[slot].con=WM:CreateControl("AG_InvCon"..slot,control,CT_LABEL)
+			BG[slot].con:SetFont("ZoFontGameSmall")
+			BG[slot].con:SetAnchor(BOTTOMRIGHT,BG[slot],TOPRIGHT,7,-2)
+			BG[slot].con:SetDimensions(50,10)
+			BG[slot].con:SetHidden(true)
+			BG[slot].con:SetHorizontalAlignment(2)
+		end
+	end
+end
+--[[
+function AG.Condition()
+	AG.Charge()
+	local condition,count=0,0
+	for x,slot in pairs(AG.gearslot)do
+		if GetItemInstanceId(BAG_WORN,slot)then
+			if AG.setdata.option[10]then
+				local quality=GetItemLinkQuality(GetItemLink(BAG_WORN,slot))
+				BG[slot]:SetHidden(false)
+				BG[slot]:SetColor(AG.color[quality][1],AG.color[quality][2],AG.color[quality][3],1)
+				BG[slot]:GetParent():SetMouseOverTexture(not ZO_Character_IsReadOnly()and 'AlphaGear/icon/mo.dds' or nil)
+				BG[slot]:GetParent():SetPressedMouseOverTexture(not ZO_Character_IsReadOnly()and 'AlphaGear/icon/mo.dds' or nil)
+				if DoesItemHaveDurability(BAG_WORN,slot)then
+					local con=GetItemCondition(BAG_WORN,slot)
+					condition=condition+con
+					count=count+1
+					local r,g,b=AG.Color(con)
+					BG[slot].con:SetText(con.."%")
+					BG[slot].con:SetColor(r,g,b,0.9)
+					BG[slot].con:SetHidden(false)
+				else BG[slot].con:SetHidden(true)end
+			end
+		else
+			BG[slot]:SetHidden(true)
+			BG[slot].con:SetHidden(true)
+		end
+	end
+	condition=math.floor(condition/count)
+	if AG.setdata.option[6]then
+		local r,g,b=AG.Color(condition)
+		AG_Repair:GetParent():SetHidden(false)
+		AG_RepairTex:SetColor(r,g,b,1)
+		if AG.setdata.option[7]then AG_RepairCost:SetText(GetRepairAllCost().." |t12:12:esoui/art/currency/currency_gold.dds|t");AG_RepairCost:SetHidden(false)
+		else AG_RepairCost:SetHidden(true)end
+		AG_RepairValue:SetText(condition.."%")
+		AG_RepairValue:SetColor(r,g,b,1)
+	else AG_Repair:GetParent():SetHidden(true)end
+end
+function AG4.Charge()
+	if not AG.setdata.option[8]then
+		AG_Charge1Bg:SetHidden(true)
+		AG_Charge2Bg:SetHidden(true)
+		return
+	end
+	local pair,lock=GetActiveWeaponPairInfo()
+	local weapon1,weapon2,charge1,charge2=nil,nil,nil,nil
+	if pair==1 then
+		if IsItemChargeable(BAG_WORN,EQUIP_SLOT_MAIN_HAND)then
+			charge1={GetChargeInfoForItem(BAG_WORN,EQUIP_SLOT_MAIN_HAND)}
+			weapon1={GetItemInfo(BAG_WORN,EQUIP_SLOT_MAIN_HAND)}
+			AG.CHARGE1=EQUIP_SLOT_MAIN_HAND
+		end
+		if IsItemChargeable(BAG_WORN,EQUIP_SLOT_OFF_HAND)then
+			charge2={GetChargeInfoForItem(BAG_WORN,EQUIP_SLOT_OFF_HAND)}
+			weapon2={GetItemInfo(BAG_WORN,EQUIP_SLOT_OFF_HAND)}
+			AG.CHARGE2=EQUIP_SLOT_OFF_HAND
+		end
+	else
+		if IsItemChargeable(BAG_WORN,EQUIP_SLOT_BACKUP_MAIN)then
+			charge1={GetChargeInfoForItem(BAG_WORN,EQUIP_SLOT_BACKUP_MAIN)}
+			weapon1={GetItemInfo(BAG_WORN,EQUIP_SLOT_BACKUP_MAIN)}
+			AG.CHARGE1=EQUIP_SLOT_BACKUP_MAIN
+		end
+		if IsItemChargeable(BAG_WORN,EQUIP_SLOT_BACKUP_OFF)then
+			charge2={GetChargeInfoForItem(BAG_WORN,EQUIP_SLOT_BACKUP_OFF)}
+			weapon2={GetItemInfo(BAG_WORN,EQUIP_SLOT_BACKUP_OFF)}
+			AG.CHARGE2=EQUIP_SLOT_BACKUP_OFF
+		end
+	end
+	ZO_ActionBar1KeybindBG:SetWidth(680)
+	ZO_ActionBar1KeybindBG:SetAnchor(LEFT,ZO_ActionBar1,LEFT,-60,0)
+	if charge1 then
+		local charge=math.floor(charge1[1]/charge1[2]*100)
+		local r,g,b=AG.Color(charge)
+		AG_Charge1Tex:SetTexture(weapon1[1])
+		AG_Charge1Value:SetText(charge.."%")
+		AG_Charge1Value:SetColor(r,g,b,1)
+		AG_Charge1Bg:SetHidden(false)
+		ZO_ActionBar1KeybindBG:SetWidth(710)
+	else AG_Charge1Bg:SetHidden(true)end
+	if charge2 then
+		local charge=math.floor(charge2[1]/charge2[2]*100)
+		local r,g,b=AG.Color(charge)
+		AG_Charge2Tex:SetTexture(weapon2[1])
+		AG_Charge2Value:SetText(charge.."%")
+		AG_Charge2Value:SetColor(r,g,b,1)
+		AG_Charge2Bg:SetHidden(false)
+		ZO_ActionBar1KeybindBG:SetWidth(760)
+	else AG_Charge2Bg:SetHidden(true)end
+end
+]]
+local function GetColor(val)
+	local r,g = 0,0
+	if val >= 50 then r = 100-((val-50)*2); g = 100 else r = 100; g = val*2 end
+	return r/100, g/100, 0
+end
+function KEYBINDING_MANAGER:IsChordingAlwaysEnabled() return true end
+
+EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(eventCode,addOnName)
+	SM:RegisterTopLevel(AG_Panel,false)
+    EM:UnregisterForEvent('AG4',EVENT_ADD_ON_LOADED)
+	-- EM:RegisterForEvent('AG4',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.Condition)
+	EM:RegisterForEvent('AG4',EVENT_ACTION_SLOTS_FULL_UPDATE, AG4.Swap)
+
+	local init_data = {}
+	for x = 1, MAXSLOT do
+		init_data[x] = {
+			Gear = {}, Skill = {},
+			Set = { text = 0, gear = 0, skill = {0,0} }
+		}
+		for z = 1,14 do init_data[x].Gear[z] = { id = 0, link = 0 } end
+		for z = 1,6 do init_data[x].Skill[z] = { 0,0,0 } end
+	end
+	AG4.setdata = ZO_SavedVars:New('AGX2_Character',3,nil,init_data)
+	ZO_CreateStringId('SI_BINDING_NAME_SHOW_AG_WINDOW', 'AlphaGearX2')
+	ZO_CreateStringId('SI_BINDING_NAME_AG4_NAKED', 'Unequip all Armor')
+	for x = 1, MAXSLOT do
+		ZO_CreateStringId('SI_BINDING_NAME_AG4_SET_'..x, 'LoadSet '..x)
+		AG4.DrawSet(x)
+		AG4.DrawGearButton(x)
+		AG4.DrawSkillButton(x)
+	end
+
+	ZO_PreHook('ZO_Skills_AbilitySlot_OnDragStart', AG4.OnSkillDragStart)
+	ZO_PreHook('ZO_InventorySlot_OnDragStart', AG4.OnItemDragStart)
+	ZO_PreHookHandler(AG_PanelMenu,'OnShow', function()
+		zo_callLater(function() EM:RegisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP,function()
+			AG_PanelMenu:SetHidden(true)
+			EM:UnregisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP)
+		end) end, 250)
+	end)
+	ZO_PreHookHandler(ZO_Skills,'OnShow', function() AG4.SetPosition(ZO_Skills,-25) end)
+	ZO_PreHookHandler(ZO_Skills,'OnHide', AG4.ResetPosition)
+	ZO_PreHookHandler(ZO_PlayerInventory,'OnShow', function() AG4.SetPosition(ZO_PlayerInventory,0) end)
+	ZO_PreHookHandler(ZO_PlayerInventory,'OnHide', AG4.ResetPosition)
+	ZO_PreHookHandler(ZO_ChampionPerks,'OnShow', function() SM:HideTopLevel(AG_Panel) end)
+	
+	AG_PanelSetPanel.useFadeGradient = false
+	AG_PanelGearPanel.useFadeGradient = false
+	AG_PanelSkillPanel.useFadeGradient = false
+end)
