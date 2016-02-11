@@ -1,0 +1,98 @@
+<GuiXml>
+	<Font name="AGFont" font="$(MEDIUM_FONT)|18"/>
+	<Font name="AGFontSmall" font="$(BOLD_FONT)|14"/>
+	<Font name="AGFontBold" font="$(BOLD_FONT)|22"/>
+    <Controls>
+		<TopLevelControl name="AG_Panel" hidden="true" clampedToScreen="true" movable="true" mouseEnabled="true" allowBringToTop="true">
+			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
+			<!--OnMouseUp>AG.account.position={self:GetLeft(),self:GetTop()}</OnMouseUp--><Dimensions x="670" y="819"/>
+			<Controls>
+				<Backdrop name="$(parent)Bg" centerColor="282828" edgeColor="00000000"><AnchorFill/><Edge edgeSize="1"/></Backdrop>
+				<Backdrop name="$(parent)Menu" centerColor="598527" edgeColor="00000000" hidden="true" tier="2">
+					<Anchor point="3" relativePoint="3" relativeTo="$(parent)"/><Dimensions x="250"/><Edge edgeSize="1"/>
+					<Controls>
+						<Button name="$(parent)Button1" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
+							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="10"/>
+							<FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/><Dimensions x="230"/>
+							<OnInitialized>self:SetText(AG4[GetCVar('language.2')].Copy)</OnInitialized>
+							<OnClicked>AG4.MenuAction(1)</OnClicked>
+						</Button>
+						<Button name="$(parent)Button2" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
+							<Anchor point="3" relativePoint="6" relativeTo="$(parent)Button1"/>
+							<FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/><Dimensions x="230"/>
+							<OnInitialized>self:SetText(AG4[GetCVar('language.2')].Paste)</OnInitialized>
+							<OnClicked>AG4.MenuAction(2)</OnClicked>
+						</Button>
+						<Button name="$(parent)Button3" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
+							<Anchor point="3" relativePoint="6" relativeTo="$(parent)Button2"/>
+							<FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/><Dimensions x="230"/>
+							<OnInitialized>self:SetText(AG4[GetCVar('language.2')].Insert)</OnInitialized>
+							<OnClicked>AG4.MenuAction(5)</OnClicked>
+						</Button>
+						<Button name="$(parent)Button4" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
+							<Anchor point="3" relativePoint="6" relativeTo="$(parent)Button3"/>
+							<FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/><Dimensions x="230"/>
+							<OnInitialized>self:SetText(AG4[GetCVar('language.2')].Rename)</OnInitialized>
+							<OnClicked>AG4.MenuAction(4)</OnClicked>
+						</Button>
+						<Button name="$(parent)Button5" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="ZoFontGame" hidden="true">
+							<Anchor point="3" relativePoint="6" relativeTo="$(parent)Button4"/>
+							<FontColors normalColor="FFFFFF" mouseOverColor="FFAA33"/><Dimensions x="230"/>
+							<OnInitialized>self:SetText(AG4[GetCVar('language.2')].Clear)</OnInitialized>
+							<OnClicked>AG4.MenuAction(3)</OnClicked>
+						</Button>
+					</Controls>
+				</Backdrop>
+				<Label name="$(parent)Headline" font="AGFont" color="FFFFFF">
+					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="6"/>
+					<OnInitialized>self:SetText("|cFFAA33"..AG4.name.."|r "..AG4.version)</OnInitialized>
+				</Label>
+				<Button name="$(parent)CloseButton" clickSound="Click">
+					<Anchor point="9" relativePoint="9" relativeTo="$(parent)" offsetX="-10" offsetY="4"/>
+					<Dimensions y="25" x="25"/>
+					<Textures normal="esoui/art/buttons/decline_up.dds" pressed="esoui/art/buttons/decline_down.dds" mouseOver="esoui/art/buttons/decline_over.dds"/>
+					<OnClicked>AG4.ShowMain()</OnClicked>
+				</Button>
+				<Button name="$(parent)OptionButton" clickSound="Click">
+					<Anchor point="8" relativePoint="2" relativeTo="$(parent)CloseButton"/>
+					<Dimensions y="35" x="35"/>
+					<Textures normal="esoui/art/chatwindow/chat_options_up.dds" pressed="esoui/art/chatwindow/chat_options_down.dds" mouseOver="esoui/art/chatwindow/chat_options_over.dds"/>
+					<OnClicked></OnClicked>
+				</Button>
+				<Backdrop name="$(parent)GearPanel" centerColor="282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+					<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="35"/><Dimensions x="650" y="224"/><Edge edgeSize="1"/>
+					<OnInitialized>ZO_Scroll_Initialize(self)</OnInitialized>
+					<Controls>
+						<Control name="$(parent)ScrollChild" resizeToFitDescendents="true">
+							<OnInitialized>self:SetParent(self:GetParent():GetNamedChild("Scroll"));self:SetAnchor(3,nil,3,0,0)</OnInitialized>
+						</Control>
+					</Controls>
+				</Backdrop>
+				<Backdrop name="$(parent)SkillPanel" centerColor="282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+					<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="346" offsetY="269"/><Dimensions x="314" y="539"/><Edge edgeSize="1"/>
+					<OnInitialized>ZO_Scroll_Initialize(self)</OnInitialized>
+					<Controls>
+						<Control name="$(parent)ScrollChild" resizeToFitDescendents="true">
+							<OnInitialized>self:SetParent(self:GetParent():GetNamedChild("Scroll"));self:SetAnchor(3,nil,3,0,0)</OnInitialized>
+						</Control>
+					</Controls>
+				</Backdrop>
+				<Backdrop name="$(parent)SetPanel" centerColor="282828" edgeColor="00000000" inherits="ZO_ScrollContainerBase">
+					<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="269"/><Dimensions x="327" y="539"/><Edge edgeSize="1"/>
+					<OnInitialized>ZO_Scroll_Initialize(self)</OnInitialized>
+					<Controls>
+						<Control name="$(parent)ScrollChild" resizeToFitDescendents="true">
+							<OnInitialized>self:SetParent(self:GetParent():GetNamedChild("Scroll"));self:SetAnchor(3,nil,3,0,0)</OnInitialized>
+						</Control>
+					</Controls>
+				</Backdrop>
+			</Controls>
+		</TopLevelControl>
+        <TopLevelControl name="AlphaGearX2">
+            <OnInitialized>
+            </OnInitialized>
+			<OnUpdate>
+			</OnUpdate>
+        </TopLevelControl>
+    </Controls>
+</GuiXml>
