@@ -8,7 +8,7 @@ local L, ZOSF = AG4[GetCVar('language.2')] or AG4.en, zo_strformat
 local QUALITY = {[0]={0.65,0.65,0.65,1},[1]={1,1,1,1},[2]={0.17,0.77,0.05,1},[3]={0.22,0.57,1,1},[4]={0.62,0.18,0.96,1},[5]={0.80,0.66,0.10,1}}
 local QUALITYHEX = {[0]='B3B3B3',[1]='FFFFFF',[2]='2DC50E',[3]='3A92FF',[4]='A02EF7',[5]='EECA2A'}
 local MENU, SELECT, DRAGINFO, MAXSLOT, TTANI, ACTIONBAR, ACTIVESET = { nr = nil, type = nil, copy = nil }, { on = false }, {}, 16, false, false
-local EM, WM, SM = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER
+local EM, WM, SM, SWAP = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, false
 local DUPSLOTS = { 1, 2, 3, 4, 13, 14 }
 local SLOTS = {
 	{EQUIP_SLOT_MAIN_HAND,'mainhand','MainHand'},
@@ -557,13 +557,8 @@ function AG4.LoadSet(nr)
 	ACTIVESET = nr
 	local pair,_ = GetActiveWeaponPairInfo()
 	if AG4.setdata[nr].Set.gear > 0 then AG4.LoadGear(AG4.setdata[nr].Set.gear) end
-	if pair == 1 then
-		ACTIONBAR = 2
-		if AG4.setdata[nr].Set.skill[1] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[1]) end
-	else
-		ACTIONBAR = 1
-		if AG4.setdata[nr].Set.skill[2] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[2]) end
-	end
+	if AG4.setdata[nr].Set.skill[pair] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[pair]) end
+	SWAP = true
 end
 function AG4.OnItemDragStart(invSlot)
     if GetCursorContentType() == MOUSE_CONTENT_EMPTY and not AG_Panel:IsHidden() then
@@ -611,9 +606,10 @@ function AG4.ResetPosition()
 end
 function AG4.Swap(eventCode,isHotbarSwap)
     if isHotbarSwap and not IsBlockActive()then
-		if ACTIONBAR and ACTIVESET and AG4.setdata[ACTIVESET].Set.skill[ACTIONBAR] > 0 then
-			AG4.LoadBar(AG4.setdata[ACTIVESET].Set.skill[ACTIONBAR])
-			if ACTIONBAR == 1 then ACTIONBAR = 2 else ACTIONBAR = 1 end
+		if ACTIVESET and SWAP then
+			local pair,_ = GetActiveWeaponPairInfo()
+			if AG4.setdata[ACTIVESET].Set.skill[pair] > 0 then AG4.LoadBar(AG4.setdata[ACTIVESET].Set.skill[pair]) end
+			SWAP = false
 		end
     end
 	-- AG4.Charge()
