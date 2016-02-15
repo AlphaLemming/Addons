@@ -5,7 +5,7 @@
     <Controls>
 		<TopLevelControl name="AG_Panel" hidden="true" clampedToScreen="true" movable="true" mouseEnabled="true" allowBringToTop="true">
 			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
-			<!--OnMouseUp>AG.account.position={self:GetLeft(),self:GetTop()}</OnMouseUp--><Dimensions x="670" y="819"/>
+			<OnMouseUp>AG4.account.pos={self:GetLeft(),self:GetTop()}</OnMouseUp><Dimensions x="670" y="819"/>
 			<Controls>
 				<Backdrop name="$(parent)Bg" centerColor="282828" edgeColor="00000000"><AnchorFill/><Edge edgeSize="1"/></Backdrop>
 				<Backdrop name="$(parent)Menu" centerColor="598527" edgeColor="00000000" hidden="true" tier="2">
@@ -88,6 +88,22 @@
 				</Backdrop>
 			</Controls>
 		</TopLevelControl>
+		<Button name="AG_Repair" clickSound="Click" hidden="false">
+			<Anchor point="3" relativePoint="9" relativeTo="ActionButton8" offsetX="5"/>
+			<Dimensions x="50" y="50"/><!--Textures normal="AlphaGearX2/info.dds"/-->
+			<OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+			<OnClicked></OnClicked>
+			<Controls>
+				<Backdrop name="$(parent)Bg" edgeColor="00000000"><Center file="AlphaGearX2/info.dds"/><AnchorFill/><Edge edgeSize="1"/></Backdrop>
+				<Label name="$(parent)Cost" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="4" relativePoint="1" relativeTo="$(parent)" offsetY="-5"/><Dimensions x="50" y="12"/>
+				</Label>
+				<Label name="$(parent)Value" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="1" relativePoint="4" relativeTo="$(parent)" offsetY="-1"/><Dimensions x="50" y="12"/>
+				</Label>
+				<Texture name="$(parent)Tex" textureFile="AlphaGearX2/gear.dds" color="00FF00"><Anchor point="128"/><Dimensions x="40" y="40"/></Texture>
+			</Controls>
+		</Button>
         <TopLevelControl name="AlphaGearX2">
             <OnInitialized>
             </OnInitialized>
