@@ -28,6 +28,11 @@ local SLOTS = {
 	-- ZO_CharacterEquipmentSlots
 }
 
+local function GetColor(val)
+	local r,g = 0,0
+	if val >= 50 then r = 100-((val-50)*2); g = 100 else r = 100; g = val*2 end
+	return r/100, g/100, 0
+end
 function AG4.DrawMenu(c,line)
 	AG_PanelMenu:ToggleHidden()
 	AG_PanelMenu:SetAnchor(3,c,6,0,0)
@@ -602,7 +607,7 @@ function AG4.SetPosition(parent,pos)
 end
 function AG4.ResetPosition()
 	AG_Panel:ClearAnchors()
-	AG_Panel:SetAnchor(128,GuiRoot,128,0,0)
+	AG_Panel:SetAnchor(3,GuiRoot,3,AG4.account.pos[1],AG4.account.pos[2])
 end
 function AG4.Swap(eventCode,isHotbarSwap)
     if isHotbarSwap and not IsBlockActive()then
@@ -614,78 +619,83 @@ function AG4.Swap(eventCode,isHotbarSwap)
     end
 	-- AG4.Charge()
 end
-function AG4.DrawInventory(vis)
+function AG4.DrawInventory()
 	local tex = 'AlphaGearX2/hl.dds'
-	for slot,control in pairs(inv)do
-		if vis==true or vis==false then
-			BG[slot]:SetHidden(vis)
-			BG[slot].con:SetHidden(vis)
+	for _,c in pairs(SLOTS) do
+		local p = WM:GetControlByName('ZO_CharacterEquipmentSlots'..c[2])
+		-- local s = WM:CreateControl('ZO_CharacterEquipmentSlots'..c[2]..'AG_InvBg'..c[1], p, CT_TEXTURE)
+		local s = WM:CreateControl('$(parent)AG_InvBg'..c[1], p, CT_TEXTURE)
+		s:SetHidden(true)
+		s:SetDrawLevel(1)
+		s:SetTexture('AlphaGearX2/hole.dds')
+		s:SetColor(1,1,1,1)
+		s:SetAnchorFill()
+		s = p:GetNamedChild('DropCallout')
+		s:ClearAnchors()
+		s:SetAnchor(4,p,4,0,2)
+		s:SetDimensions(52,52)
+		s:SetTexture(tex)
+		s:SetDrawLayer(0)
+		if s = p:GetNamedChild('Highlight') then
+			s:ClearAnchors()
+			s:SetAnchor(4,p,4,0,2)
+			s:SetDimensions(52,52)
+			s:SetTexture(tex)
+		end
+		s = WM:CreateControl('ZO_CharacterEquipmentSlots'..c[2]..'AG_InvBg'..c[1]..'Conditon', p, CT_LABEL)
+		s:SetFont('ZoFontGameSmall')
+		s:SetAnchor(TOPRIGHT,p,TOPRIGHT,7,-2)
+		s:SetDimensions(50,10)
+		s:SetHidden(true)
+		s:SetHorizontalAlignment(2)
+	end
+end
+function AG4.Condition(eventCode, bag, slot)
+	if bag ~= BAG_WORN then return end
+	-- AG.Charge()
+	if AG4.account.option[10] then
+		local p = WM:GetControlByName('ZO_CharacterEquipmentSlots'..slot)
+		local t, l = p:GetNameChild('AG_InvBg'..x), p:GetNameChild('AG_InvBg'..x..'Condition')
+		if GetItemInstanceId(BAG_WORN,slot) then
+			local r,g,b = unpack(QUALITY[GetItemLinkQuality(GetItemLink(BAG_WORN,slot)]))
+			t:SetHidden(false)
+			t:SetColor(r,g,b,1)
+			p:SetMouseOverTexture(not ZO_Character_IsReadOnly() and 'AlphaGearX2/mo.dds' or nil)
+			p:SetPressedMouseOverTexture(not ZO_Character_IsReadOnly() and 'AlphaGearX2/mo.dds' or nil)
+			if AG4.account.option[11] and DoesItemHaveDurability(BAG_WORN,slot) then
+				local con = GetItemCondition(BAG_WORN,slot)
+				local r,g,b = GetColor(con)
+				l:SetText(con..'%')
+				l:SetColor(r,g,b,0.9)
+				l:SetHidden(false)
+			else l:SetHidden(true) end
 		else
-			BG[slot]=WM:CreateControl("AG_InvBg"..slot,control,CT_TEXTURE)
-			BG[slot]:SetHidden(true)
-			BG[slot]:SetDrawLevel(1)
-			BG[slot]:SetTexture("AlphaGear/icon/hole.dds")
-			BG[slot]:SetColor(1,1,1,1)
-			BG[slot]:SetAnchorFill()
-			local c=control:GetNamedChild("DropCallout")
-			c:ClearAnchors()
-			c:SetAnchor(TOP,control,TOP,0,2)
-			c:SetDimensions(52,52)
-			c:SetTexture(tex)
-			c:SetDrawLayer(0)
-			local c=control:GetNamedChild("Highlight")
-			if c then
-				c:SetTexture(tex)
-				c:SetDimensions(52,52)
-				c:SetAnchor(TOP,control,TOP,0,2)
-			end
-			BG[slot].con=WM:CreateControl("AG_InvCon"..slot,control,CT_LABEL)
-			BG[slot].con:SetFont("ZoFontGameSmall")
-			BG[slot].con:SetAnchor(BOTTOMRIGHT,BG[slot],TOPRIGHT,7,-2)
-			BG[slot].con:SetDimensions(50,10)
-			BG[slot].con:SetHidden(true)
-			BG[slot].con:SetHorizontalAlignment(2)
+			t:SetHidden(false)
+			l:SetHidden(false)
 		end
 	end
+	if AG4.account.option[3] then
+		local condition, count, allcost = 0, 0, 0
+		for _,c in pairs(SLOTS) do
+			if GetItemInstanceId(BAG_WORN,c[1]) then
+				condition = condition + GetItemCondition(BAG_WORN,c[1])
+				allcost = allcost + GetItemRepairCost(BAG_WORN,c[1])
+				count = count + 1
+			end
+		end
+		condition = math.floor(condition/count) or 0
+		local r,g,b = GetColor(condition)
+		AG_RepairTex:SetColor(r,g,b,1)
+		AG_RepairValue:SetText(condition..'%')
+		AG_RepairValue:SetColor(r,g,b,1)
+		if AG4.account.option[4] then AG_RepairCost:SetText(allcost..' |t12:12:esoui/art/currency/currency_gold.dds|t') end
+	end
+end
+function AG4.SetOptions()
+	AG_Repair:SetHidden(not AG4.account.option[3])
+	AG_RepairCost:SetHidden(not AG4.account.option[4])
 end
 --[[
-function AG.Condition()
-	AG.Charge()
-	local condition,count=0,0
-	for x,slot in pairs(AG.gearslot)do
-		if GetItemInstanceId(BAG_WORN,slot)then
-			if AG.setdata.option[10]then
-				local quality=GetItemLinkQuality(GetItemLink(BAG_WORN,slot))
-				BG[slot]:SetHidden(false)
-				BG[slot]:SetColor(AG.color[quality][1],AG.color[quality][2],AG.color[quality][3],1)
-				BG[slot]:GetParent():SetMouseOverTexture(not ZO_Character_IsReadOnly()and 'AlphaGear/icon/mo.dds' or nil)
-				BG[slot]:GetParent():SetPressedMouseOverTexture(not ZO_Character_IsReadOnly()and 'AlphaGear/icon/mo.dds' or nil)
-				if DoesItemHaveDurability(BAG_WORN,slot)then
-					local con=GetItemCondition(BAG_WORN,slot)
-					condition=condition+con
-					count=count+1
-					local r,g,b=AG.Color(con)
-					BG[slot].con:SetText(con.."%")
-					BG[slot].con:SetColor(r,g,b,0.9)
-					BG[slot].con:SetHidden(false)
-				else BG[slot].con:SetHidden(true)end
-			end
-		else
-			BG[slot]:SetHidden(true)
-			BG[slot].con:SetHidden(true)
-		end
-	end
-	condition=math.floor(condition/count)
-	if AG.setdata.option[6]then
-		local r,g,b=AG.Color(condition)
-		AG_Repair:GetParent():SetHidden(false)
-		AG_RepairTex:SetColor(r,g,b,1)
-		if AG.setdata.option[7]then AG_RepairCost:SetText(GetRepairAllCost().." |t12:12:esoui/art/currency/currency_gold.dds|t");AG_RepairCost:SetHidden(false)
-		else AG_RepairCost:SetHidden(true)end
-		AG_RepairValue:SetText(condition.."%")
-		AG_RepairValue:SetColor(r,g,b,1)
-	else AG_Repair:GetParent():SetHidden(true)end
-end
 function AG4.Charge()
 	if not AG.setdata.option[8]then
 		AG_Charge1Bg:SetHidden(true)
@@ -739,19 +749,19 @@ function AG4.Charge()
 	else AG_Charge2Bg:SetHidden(true)end
 end
 ]]
-local function GetColor(val)
-	local r,g = 0,0
-	if val >= 50 then r = 100-((val-50)*2); g = 100 else r = 100; g = val*2 end
-	return r/100, g/100, 0
-end
+
 function KEYBINDING_MANAGER:IsChordingAlwaysEnabled() return true end
 
 EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(eventCode,addOnName)
 	SM:RegisterTopLevel(AG_Panel,false)
     EM:UnregisterForEvent('AG4',EVENT_ADD_ON_LOADED)
-	-- EM:RegisterForEvent('AG4',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.Condition)
+	EM:RegisterForEvent('AG4',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.Condition)
 	EM:RegisterForEvent('AG4',EVENT_ACTION_SLOTS_FULL_UPDATE, AG4.Swap)
 
+	local init_acount = {
+		option = {true,true,true,true,true,true,false,true,true,true,true,true,true},
+		pos = {GuiRoot:GetWidth()/2 - 335, GuiRoot:GetHeight()/2 - 410,}
+	}
 	local init_data = {}
 	for x = 1, MAXSLOT do
 		init_data[x] = {
@@ -762,6 +772,7 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(eventCode,addOnName)
 		for z = 1,6 do init_data[x].Skill[z] = { 0,0,0 } end
 	end
 	AG4.setdata = ZO_SavedVars:New('AGX2_Character',3,nil,init_data)
+	AG4.account = ZO_SavedVars:NewAccountWide('AGX2_Character',3,nil,init_account)
 	ZO_CreateStringId('SI_BINDING_NAME_SHOW_AG_WINDOW', 'AlphaGearX2')
 	ZO_CreateStringId('SI_BINDING_NAME_AG4_NAKED', 'Unequip all Armor')
 	for x = 1, MAXSLOT do
@@ -788,4 +799,7 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(eventCode,addOnName)
 	AG_PanelSetPanel.useFadeGradient = false
 	AG_PanelGearPanel.useFadeGradient = false
 	AG_PanelSkillPanel.useFadeGradient = false
+	AG4.ResetPosition()
+	AG4.SetOptions()
+	AG4.DrawInventory()
 end)
