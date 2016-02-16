@@ -86,13 +86,29 @@
 						</Control>
 					</Controls>
 				</Backdrop>
+				<Backdrop name="$(parent)EditPanel" centerColor="282828" edgeColor="00000000" hidden="true">
+					<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="269"/><Dimensions x="327" y="539"/><Edge edgeSize="1"/>
+					<Controls>
+						<Button name="$(parent)SetName" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="AGFont">
+							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="2" offsetY="42"/><Dimensions x="323" y="40"/>
+							<OnClicked></OnClicked>
+						</Button>
+						<Button name="$(parent)Bar1Name" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="AGFont">
+							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="2" offsetY="176"/><Dimensions x="323" y="40"/>
+							<OnClicked></OnClicked>
+						</Button>
+						<Button name="$(parent)Bar2Name" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="AGFont">
+							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="2" offsetY="310"/><Dimensions x="323" y="40"/>
+							<OnClicked></OnClicked>
+						</Button>
+					</Controls>
+				</Backdrop>
 			</Controls>
 		</TopLevelControl>
-		<Button name="AG_Repair" clickSound="Click" hidden="false">
-			<Anchor point="3" relativePoint="9" relativeTo="ActionButton8" offsetX="5"/>
-			<Dimensions x="50" y="50"/><!--Textures normal="AlphaGearX2/info.dds"/-->
+		
+		<Button name="AG_Repair" clickSound="Click" hidden="true">
+			<Anchor point="3" relativePoint="9" relativeTo="ActionButton8" offsetX="5"/><Dimensions x="50" y="50"/>
 			<OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
-			<OnClicked></OnClicked>
 			<Controls>
 				<Backdrop name="$(parent)Bg" edgeColor="00000000"><Center file="AlphaGearX2/info.dds"/><AnchorFill/><Edge edgeSize="1"/></Backdrop>
 				<Label name="$(parent)Cost" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
@@ -104,6 +120,60 @@
 				<Texture name="$(parent)Tex" textureFile="AlphaGearX2/gear.dds" color="00FF00"><Anchor point="128"/><Dimensions x="40" y="40"/></Texture>
 			</Controls>
 		</Button>
+		<Button name="AG_Charge1" clickSound="Click" hidden="true">
+			<Anchor point="3" relativePoint="9" relativeTo="AG_Repair" offsetX="5"/><Dimensions x="50" y="50"/>
+			<OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+			<Controls>
+				<Backdrop name="$(parent)Bg" edgeColor="00000000"><Center file="AlphaGearX2/info.dds"/><AnchorFill/><Edge edgeSize="1"/></Backdrop>
+				<Label name="$(parent)Cost" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="4" relativePoint="1" relativeTo="$(parent)" offsetY="-5"/><Dimensions x="50" y="12"/>
+				</Label>
+				<Label name="$(parent)Value" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="1" relativePoint="4" relativeTo="$(parent)" offsetY="-1"/><Dimensions x="50" y="12"/>
+				</Label>
+				<Texture name="$(parent)Tex" color="FFFFFF"><Anchor point="128"/><Dimensions x="40" y="40"/></Texture>
+			</Controls>
+		</Button>
+		<Button name="AG_Charge2" clickSound="Click" hidden="true">
+			<Anchor point="3" relativePoint="9" relativeTo="AG_Charge1" offsetX="5"/><Dimensions x="50" y="50"/>
+			<OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+			<Controls>
+				<Backdrop name="$(parent)Bg" edgeColor="00000000"><Center file="AlphaGearX2/info.dds"/><AnchorFill/><Edge edgeSize="1"/></Backdrop>
+				<Label name="$(parent)Cost" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="4" relativePoint="1" relativeTo="$(parent)" offsetY="-5"/><Dimensions x="50" y="12"/>
+				</Label>
+				<Label name="$(parent)Value" font="ZoFontGameSmall" color="FFFFFF" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="1" relativePoint="4" relativeTo="$(parent)" offsetY="-1"/><Dimensions x="50" y="12"/>
+				</Label>
+				<Texture name="$(parent)Tex" color="FFFFFF"><Anchor point="128"/><Dimensions x="40" y="40"/></Texture>
+			</Controls>
+		</Button>
+		
+		<TopLevelControl name="AG_SetTip" hidden="true"><Anchor point="3" relativePoint="9" relativeTo="AG_Panel"/><Dimensions x="400" y="400"/>
+			<Controls>
+				<Backdrop name="$(parent)Bg" centerColor="282828" edgeColor="000000" hidden="true">	<Edge edgeSize="1"/><AnchorFill/></Backdrop>
+				<Label name="$(parent)Name" font="AGFontBold" color="FFAA33" horizontalAlignment="1" verticalAlignment="1">
+					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="5"/><Dimensions x="400" y="30"/>
+				</Label>
+				<Backdrop name="$(parent)Skills1" centerColor="383838" edgeColor="00000000" hidden="true">
+					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="37"/><Dimensions x="400" y="82"/><Edge edgeSize="1"/>
+					<Controls>
+						<Texture name="$(parent)Skill1Icon" color="FFFFFF"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="2"/><Dimensions x="64" y="64"/></Texture>
+						<Label name="$(parent)Bar1Name" font="AGFont" color="FFAA33" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="72" offsetY="2"/><Dimensions x="265" y="40"/></Label>
+						<Label name="$(parent)Bar1Skills"><Anchor point="6" relativePoint="6" relativeTo="$(parent)" offsetX="72" offsetY="-2"/><Dimensions x="265" y="40"/></Label>
+					</Controls>
+				</Backdrop>
+				<Backdrop name="$(parent)Skills2" centerColor="383838" edgeColor="00000000" hidden="true">
+					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="121"/><Dimensions x="400" y="82"/><Edge edgeSize="1"/>
+					<Controls>
+						<Texture name="$(parent)Skill2Icon" color="FFFFFF"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="2"/><Dimensions x="64" y="64"/></Texture>
+						<Label name="$(parent)Bar2Name" font="AGFont" color="FFAA33" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="72" offsetY="2"/><Dimensions x="265" y="40"/></Label>
+						<Label name="$(parent)Bar2Skills"><Anchor point="6" relativePoint="6" relativeTo="$(parent)" offsetX="72" offsetY="-2"/><Dimensions x="265" y="40"/></Label>
+					</Controls>
+				</Backdrop>
+			</Controls>
+		</TopLevelControl>
+		
         <TopLevelControl name="AlphaGearX2">
             <OnInitialized>
             </OnInitialized>
