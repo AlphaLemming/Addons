@@ -204,7 +204,7 @@ function AG4.DrawGearButton(nr)
 end
 function AG4.DrawSet(nr)
 	if WM:GetControlByName('AG_SetSelector_'..nr) then return end
-	local p, c, l, s, eb = AG_PanelSetPanelScrollChild
+	local p, l, s = AG_PanelSetPanelScrollChild
 	s = WM:CreateControl('AG_SetSelector_'..nr, p, CT_BUTTON)
 	s:SetAnchor(3,nil,3,0,81*(nr-1))
 	s:SetDimensions(311,76)
@@ -216,9 +216,10 @@ function AG4.DrawSet(nr)
 	s:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
 	s:SetHandler('OnMouseDown',function(self,button)
 		if button == 2 then
-			AG4.DrawMenu(self,{false,false,false,true,true})
-			MENU.nr = nr
-			MENU.type = 3
+			-- AG4.DrawMenu(self,{false,false,false,true,true})
+			-- MENU.nr = nr
+			-- MENU.type = 3
+			AG4.ShowEditPanel()
 		elseif button == 1 then
 			AG4.LoadSet(nr)
 		end
@@ -233,82 +234,26 @@ function AG4.DrawSet(nr)
 	l:SetColor(1,1,1,0.8)
 	l:SetText(nr)
 	l = WM:CreateControl('AG_SetSelector_'..nr..'_KeyBind', s, CT_LABEL)
-	l:SetAnchor(9,s,9,-140,0)
+	l:SetAnchor(9,s,9,-15,0)
 	l:SetDrawTier(1)
-	l:SetDimensions(135,44)
+	l:SetDimensions(235,44)
 	l:SetHorizontalAlignment(2)
 	l:SetVerticalAlignment(1)
-	l:SetFont('AGFontSmall')
+	l:SetFont('AGFont')
 	l:SetColor(1,1,1,0.5)
-	for x = 1,3 do
-		c = WM:CreateControl('AG_SetButton_'..nr..'_'..x, s, CT_BUTTON)
-		c:SetAnchor(3,s,3,185+(x-1)*42,2)
-		c:SetDrawTier(1)
-		c:SetDimensions(40,40)
-		c:SetClickSound('Click')
-		c:SetHorizontalAlignment(1)
-		c:SetVerticalAlignment(1)
-		c:SetFont('AGFontBold')
-		c:SetNormalFontColor(1,1,1,0.6)
-		c:EnableMouseButton(2,true)
-		c.menu = x
-		c:SetNormalTexture('AlphaGearX2/dark.dds')
-		c:SetMouseOverTexture('AlphaGearX2/light.dds')
-		c:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
-		c:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
-		c:SetHandler('OnMouseDown',function(self,button)
-			if button == 2 then
-				if x == 1 then AG4.setdata[nr].Set.gear = 0
-				elseif x == 2 then AG4.setdata[nr].Set.skill[1] = 0
-				elseif x == 3 then AG4.setdata[nr].Set.skill[2] = 0 end
-				AG4.UpdateUI(nr,nr)
-			elseif button == 1 then
-				AG4.SetConnect(x,1)
-				SELECT = { on = true, mode = x, nr = nr }
-				zo_callLater(function() EM:RegisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP,function()
-					AG4.SetConnect(x,2)
-					SELECT = {on = false}
-					EM:UnregisterForEvent('AG4',EVENT_GLOBAL_MOUSE_UP) end)
-				end, 500)
-			end
-		end)
-	end
-	c = WM:CreateControl('AG_SetButton_'..nr..'_Box', s, CT_BUTTON)
-	c:SetAnchor(3,s,3,2,44)
-	c:SetDrawTier(1)
-	c:SetClickSound('Click')
-	c:SetDimensions(307,30)
-	c:EnableMouseButton(2,true)
-	c:SetHorizontalAlignment(0)
-	c:SetVerticalAlignment(1)
-	c:SetFont('AGFont')
-	c:SetNormalFontColor(1,1,1,0.8)
-	c:SetNormalTexture('AlphaGearX2/dark.dds')
-	c:SetMouseOverTexture('AlphaGearX2/light.dds')
-	c:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
-	c:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
-	c:SetHandler('OnMouseDown',function(self,button)
-		if button == 2 then
-			MENU.nr = nr
-			MENU.type = 3
-			AG4.MenuAction(4)
-		elseif button == 1 then AG4.LoadSet(nr) end
-	end)
-	eb = WM:CreateControlFromVirtual('AG_SetButton_'..nr..'_BoxEdit', s, 'ZO_DefaultEditForBackdrop')
-	eb:SetAnchor(3,s,3,10,48)
-	eb:SetDimensions(300,30)
-	eb:SetFont('AGFont')
-	eb:SetColor(1,1,1,0.8)
-	eb:SetMaxInputChars(75)
-	eb:SetHidden(true)
-	eb:SetHandler('OnFocusLost',function(self) self:SetHidden(true); c:SetHidden(false) end)
-	eb:SetHandler('OnEscape',function(self) self:LoseFocus() end)
-	eb:SetHandler('OnEnter',function(self)
-		c:SetHidden(false)
-		AG4.setdata[nr].Set.text = self:GetText()
-		self:LoseFocus()
-		AG4.UpdateUI(nr,nr)
-	end)
+	l = WM:CreateControl('AG_SetButton_'..nr..'_Box', s, CT_LABEL)
+	l:SetAnchor(3,s,3,2,44)
+	l:SetDrawTier(1)
+	l:SetDimensions(307,30)
+	l:SetHorizontalAlignment(0)
+	l:SetVerticalAlignment(1)
+	l:SetFont('AGFont')
+	l:SetColor(1,1,1,0.8)
+	s = WM:CreateControl('AG_SetButton_'..nr..'_BoxBg', l, CT_BACKDROP)
+	s:SetAnchorFill()
+	s:SetCenterColor(0,0,0,0.2)
+	s:SetEdgeColor(0,0,0,0)
+	s:SetEdgeTexture('',1,1,2)
 end
 
 function AG4.GetKey(keyStr)
@@ -515,7 +460,7 @@ function AG4.UpdateRepair(eventCode,bag)
 	AG_RepairCost:SetText(allcost..' |t12:12:esoui/art/currency/currency_gold.dds|t')
 end
 function AG4.UpdateCondition(eventCode,bag,slot)
-	if bag ~= BAG_WORN then return end
+	if bag ~= BAG_WORN or slot == EQUIP_SLOT_COSTUME then return end
 	local t, l = WM:GetControlByName('AG_InvBg'..slot), WM:GetControlByName('AG_InvBg'..slot..'Condition')
 	local p = t:GetParent()
 	p:SetMouseOverTexture(not ZO_Character_IsReadOnly() and 'AlphaGearX2/mo.dds' or nil)
@@ -597,19 +542,19 @@ function AG4.UpdateUI(from,to)
 		local header, tt, c = '|c00DD00'..text..'|r', ''
 		WM:GetControlByName('AG_SetSelector_'..x).data = { header = header, info = L.Set }
 		WM:GetControlByName('AG_SetSelector_'..x..'_KeyBind'):SetText(AG4.GetKey('AG4_SET_'..x))
-		c = WM:GetControlByName('AG_SetButton_'..x..'_1')
-		if AG4.setdata[x].Set.gear ~= 0 then c:SetText(AG4.setdata[x].Set.gear) else c:SetText('') end
-		c.data = { header = header, info = L.SetConnector[1] }
-		c = WM:GetControlByName('AG_SetButton_'..x..'_2')
-		if AG4.setdata[x].Set.skill[1] ~= 0 then c:SetText(AG4.setdata[x].Set.skill[1]) else c:SetText('') end
-		c.data = { header = header, info = L.SetConnector[2] }
-		c = WM:GetControlByName('AG_SetButton_'..x..'_3')
-		if AG4.setdata[x].Set.skill[2] ~= 0 then c:SetText(AG4.setdata[x].Set.skill[2]) else c:SetText('') end
-		c.data = { header = header, info = L.SetConnector[3] }
+		-- c = WM:GetControlByName('AG_SetButton_'..x..'_1')
+		-- if AG4.setdata[x].Set.gear ~= 0 then c:SetText(AG4.setdata[x].Set.gear) else c:SetText('') end
+		-- c.data = { header = header, info = L.SetConnector[1] }
+		-- c = WM:GetControlByName('AG_SetButton_'..x..'_2')
+		-- if AG4.setdata[x].Set.skill[1] ~= 0 then c:SetText(AG4.setdata[x].Set.skill[1]) else c:SetText('') end
+		-- c.data = { header = header, info = L.SetConnector[2] }
+		-- c = WM:GetControlByName('AG_SetButton_'..x..'_3')
+		-- if AG4.setdata[x].Set.skill[2] ~= 0 then c:SetText(AG4.setdata[x].Set.skill[2]) else c:SetText('') end
+		-- c.data = { header = header, info = L.SetConnector[3] }
 		c = WM:GetControlByName('AG_SetButton_'..x..'_Box')
 		c:SetText('  '..text)
 		c.data = { header = header, info = L.Edit }
-		WM:GetControlByName('AG_SetButton_'..x..'_BoxEdit'):SetText(text)
+		-- WM:GetControlByName('AG_SetButton_'..x..'_BoxEdit'):SetText(text)
 	end
 end
 
@@ -633,12 +578,16 @@ end
 function AG4.SetOptions()
 	AG_Repair:SetHidden(not AG4.account.option[3])
 	AG_RepairCost:SetHidden(not AG4.account.option[4])
-	if AG4.account.option[3] then EM:RegisterForEvent('AG_Event_Repair',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.UpdateRepair)
+	if AG4.account.option[3] then
+		EM:RegisterForEvent('AG_Event_Repair',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.UpdateRepair)
+		AG4.UpdateRepair(nil,BAG_WORN)
 	else EM:UnregisterForEvent('AG_Event_Repair',EVENT_INVENTORY_SINGLE_SLOT_UPDATE) end
 	
 	AG_Charge1:SetHidden(not AG4.account.option[5])
 	AG_Charge2:SetHidden(not AG4.account.option[5])
-	if AG4.account.option[5] then EM:RegisterForEvent('AG_Event_Charge',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.UpdateCharge)
+	if AG4.account.option[5] then
+		EM:RegisterForEvent('AG_Event_Charge',EVENT_INVENTORY_SINGLE_SLOT_UPDATE, AG4.UpdateCharge)
+		AG4.UpdateCharge(nil,BAG_WORN)
 	else EM:UnregisterForEvent('AG_Event_Charge',EVENT_INVENTORY_SINGLE_SLOT_UPDATE) end
 
 	if AG4.account.option[10] then
@@ -649,6 +598,9 @@ function AG4.SetOptions()
 		for _,c in pairs(SLOTS) do AG4.UpdateCondition(_,BAG_WORN,c[1]) end
 	end
 	AG_UI_Button:SetHidden(not AG4.account.option[1])
+	AG_UI_ButtonBg:SetMouseEnabled(AG4.account.option[1])
+	AG_UI_ButtonBg:SetMovable(AG4.account.option[1])
+	AG_UI_Button.data = { tip = AG4.name }
 end
 function AG4.SetPosition(parent,pos)
 	AG_Panel:ClearAnchors()
@@ -658,8 +610,8 @@ end
 function AG4.ResetPosition()
 	AG_Panel:ClearAnchors()
 	AG_Panel:SetAnchor(3,GuiRoot,3,AG4.account.pos[1],AG4.account.pos[2])
-	AG_UI_Button:ClearAnchors()
-	AG_UI_Button:SetAnchor(3,GuiRoot,3,AG4.account.button[1],AG4.account.button[2])
+	AG_UI_ButtonBg:ClearAnchors()
+	AG_UI_ButtonBg:SetAnchor(3,GuiRoot,3,AG4.account.button[1],AG4.account.button[2])
 end
 function AG4.ShowButton(c)
 	if not c then return false end
@@ -689,6 +641,10 @@ end
 function AG4.ShowMain()
 	SM:ToggleTopLevel(AG_Panel)
 	if not AG_Panel:IsHidden() then AG4.UpdateUI() end
+end
+function AG4.ShowEditPanel()
+	AG_PanelSetPanel:ToggleHidden()
+	AG_PanelEditPanel:ToggleHidden()
 end
 function AG4.Swap(eventCode,isHotbarSwap)
     if isHotbarSwap and not IsBlockActive()then
@@ -759,6 +715,12 @@ function AG4.Tooltip(c,visible)
 			c.text = SkillTooltip
 			InitializeTooltip(c.text,AG_Panel,3,0,0,9)
 			c.text:SetSkillAbility(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3])
+		elseif c.data.tip then
+			c.text = InformationTooltip
+			InitializeTooltip(c.text,c,2,5,0,8)
+			SetTooltipText(c.text,c.data.tip)
+			c.text:SetHidden(false)
+			return
 		else
 			if c.data == nil then return end
 			c.text = InformationTooltip
@@ -789,7 +751,7 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(eventCode,addOnName)
 	local init_account = {
 		option = {true,true,true,true,true,true,false,true,true,true,true,true,true,true},
 		pos = {GuiRoot:GetWidth()/2 - 335, GuiRoot:GetHeight()/2 - 410},
-		button = {100,50},
+		button = {50,100},
 		lastset = false,
 	}
 	local init_data = {}
