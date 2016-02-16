@@ -3,6 +3,20 @@
 	<Font name="AGFontSmall" font="$(BOLD_FONT)|14"/>
 	<Font name="AGFontBold" font="$(BOLD_FONT)|22"/>
     <Controls>
+		<Backdrop name="AG_UI_ButtonBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="true" movable="true" mouseEnabled="true">
+			<Anchor point="3" relativePoint="3" relativeTo="GuiRoot" offsetX="50" offsetY="100"/>
+			<Dimensions x="60" y="60"/><Edge edgeSize="1"/><OnInitialized>self:SetParent(ZO_MainMenu)</OnInitialized>
+			<OnMouseEnter>WINDOW_MANAGER:SetMouseCursor(12);self:SetAlpha(1)</OnMouseEnter>
+			<OnMouseExit>WINDOW_MANAGER:SetMouseCursor(0);self:SetAlpha(0)</OnMouseExit>
+			<OnMouseUp>AG4.account.button={self:GetLeft(),self:GetTop()}</OnMouseUp>
+		</Backdrop>
+		<Button name="AG_UI_Button" topmost="true"><Anchor point="128" relativePoint="128" relativeTo="AG_UI_ButtonBg"/>
+			<Dimensions x="40" y="40"/><OnInitialized>self:SetParent(ZO_MainMenu)</OnInitialized><Textures normal="AlphaGearX2/ag.dds"/>
+			<OnMouseEnter>AG4.Tooltip(self,true)</OnMouseEnter>
+			<OnMouseExit>AG4.Tooltip(self,false)</OnMouseExit>
+			<OnClicked>AG4.ShowMain()</OnClicked>
+		</Button>
+
 		<TopLevelControl name="AG_Panel" hidden="true" clampedToScreen="true" movable="true" mouseEnabled="true" allowBringToTop="true">
 			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
 			<OnMouseUp>AG4.account.pos={self:GetLeft(),self:GetTop()}</OnMouseUp><Dimensions x="670" y="819"/>
@@ -89,6 +103,12 @@
 				<Backdrop name="$(parent)EditPanel" centerColor="282828" edgeColor="00000000" hidden="true">
 					<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="269"/><Dimensions x="327" y="539"/><Edge edgeSize="1"/>
 					<Controls>
+						<Button name="$(parent)CloseButton" clickSound="Click">
+							<Anchor point="9" relativePoint="9" relativeTo="$(parent)" offsetX="-10" offsetY="4"/>
+							<Dimensions y="25" x="25"/>
+							<Textures normal="esoui/art/buttons/decline_up.dds" pressed="esoui/art/buttons/decline_down.dds" mouseOver="esoui/art/buttons/decline_over.dds"/>
+							<OnClicked>AG4.ShowEditPanel()</OnClicked>
+						</Button>
 						<Button name="$(parent)SetName" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="AGFont">
 							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="2" offsetY="42"/><Dimensions x="323" y="40"/>
 							<OnClicked></OnClicked>
