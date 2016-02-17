@@ -1,3 +1,6 @@
+NotEnoughSpace = '|cFFAA33AlphaGear|r |cFF0000Nicht genügend Taschenplatz...|r',
+EditSet = 'Set <<1>> bearbeiten',
+SoulgemUsed = '<<C:1>> |cFFAA33wurde neu aufgeladen.|r',
 options = {
 	'UI-Button anzeigen',				-- 1
 	'UI-Set-Button anzeigen',			-- 2
@@ -15,3 +18,4 @@ options = {
 	'-',
 	'Waffen automatisch aufladen',		-- 15
 }
+
