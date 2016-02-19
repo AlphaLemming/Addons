@@ -163,3 +163,47 @@ function AG4.DrawOptions(set)
 		AG4.SetOptions()
 	end
 end
+-- 19.02.16
+function AG4.DrawSet(nr)
+	s:SetHandler('OnMouseDown',function(self,button)
+		if button == 2 then
+			SELECT = nr
+			local anchor = {AG_PanelEditPanel:GetAnchor()}
+			if anchor[3] == self then
+				self:SetHeight(76)
+				AG_PanelEditPanel:SetHidden(true)
+			else			
+				if anchor[3] then anchor[3]:SetHeight(76) end
+				self:SetHeight(408)
+				AG_PanelEditPanel:ClearAnchors()
+				AG_PanelEditPanel:SetAnchor(6,self,6,2,-2)
+				AG_PanelEditPanel:SetHidden(false)
+			end
+		elseif button == 1 then AG4.LoadSet(nr) end
+	end)
+end
+
+function AG4.UpdateEditPanel(nr)
+	for x = 1,2 do
+		for slot = 1,6 do
+			local c,set = WM:GetControlByName('AG_Edit_Skill_'..x..'_'..slot), AG4.setdata[nr].Set.skill[x]
+			if set ~= 0 then
+				local _,icon = GetSkillAbilityInfo(AG4.setdata[set].Skill[slot][1],AG4.setdata[set].Skill[slot][2],AG4.setdata[set].Skill[slot][3])
+				c:SetNormalTexture(icon or nil)
+			else
+				c:SetNormalTexture()
+			end
+		end
+	end
+	for slot = 1,14 do
+		local c,set,color = WM:GetControlByName('AG_Edit_Gear_'..slot), AG4.setdata[nr].Set.gear
+		if set ~= 0 then
+			c:SetNormalTexture(GetItemLinkInfo(AG4.setdata[set].Gear[slot].link) or nil)
+			color = QUALITY[GetItemLinkQuality(AG4.setdata[set].Gear[slot].link)] or {0,0,0}
+			c:GetNamedChild('Bg'):SetCenterColor(color[1],color[2],color[3],0.75)
+		else
+			c:SetNormalTexture('esoui/art/characterwindow/gearslot_'..SLOTS[slot][2]..'.dds')
+			c:GetNamedChild('Bg'):SetCenterColor(0,0,0,0.2)
+		end
+	end
+end
