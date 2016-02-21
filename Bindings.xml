@@ -1,0 +1,20 @@
+<Bindings><Layer name="SI_KEYBINDINGS_LAYER_GENERAL"><Category name="|cFFAA33AlphaGearX2|r">
+<Action name="SHOW_AG_WINDOW"><Down>AG4.ShowMain()</Down></Action>
+<Action name="AG4_NAKED"><Down>AG4.GoNaked(1)</Down></Action>
+<Action name="AG4_SET_1"><Down>AG4.LoadSet(1)</Down></Action>
+<Action name="AG4_SET_2"><Down>AG4.LoadSet(2)</Down></Action>
+<Action name="AG4_SET_3"><Down>AG4.LoadSet(3)</Down></Action>
+<Action name="AG4_SET_4"><Down>AG4.LoadSet(4)</Down></Action>
+<Action name="AG4_SET_5"><Down>AG4.LoadSet(5)</Down></Action>
+<Action name="AG4_SET_6"><Down>AG4.LoadSet(6)</Down></Action>
+<Action name="AG4_SET_7"><Down>AG4.LoadSet(7)</Down></Action>
+<Action name="AG4_SET_8"><Down>AG4.LoadSet(8)</Down></Action>
+<Action name="AG4_SET_9"><Down>AG4.LoadSet(9)</Down></Action>
+<Action name="AG4_SET_10"><Down>AG4.LoadSet(10)</Down></Action>
+<Action name="AG4_SET_11"><Down>AG4.LoadSet(11)</Down></Action>
+<Action name="AG4_SET_12"><Down>AG4.LoadSet(12)</Down></Action>
+<Action name="AG4_SET_13"><Down>AG4.LoadSet(13)</Down></Action>
+<Action name="AG4_SET_14"><Down>AG4.LoadSet(14)</Down></Action>
+<Action name="AG4_SET_15"><Down>AG4.LoadSet(15)</Down></Action>
+<Action name="AG4_SET_16"><Down>AG4.LoadSet(16)</Down></Action>
+</Category></Layer></Bindings>
