@@ -2,6 +2,7 @@
 	<Font name="AGFont" font="$(MEDIUM_FONT)|18"/>
 	<Font name="AGFontSmall" font="$(BOLD_FONT)|14"/>
 	<Font name="AGFontBold" font="$(BOLD_FONT)|22"/>
+	<Font name="AGFontBig" font="$(BOLD_FONT)|24|soft-shadow-thick"/>
     <Controls>
 		<Backdrop name="AG_UI_ButtonBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="true" movable="true" mouseEnabled="true">
 			<Anchor point="3" relativePoint="3" relativeTo="GuiRoot" offsetX="50" offsetY="100"/>
@@ -17,10 +18,10 @@
 			<OnClicked>AG4.ShowMain()</OnClicked>
 		</Button>
 
-		<TopLevelControl name="AG_SwapScreen" level="0">
+		<!--TopLevelControl name="AG_SwapScreen" level="0">
 			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
 			<OnInitialized>self:SetDimensions(GuiRoot:GetWidth(),GuiRoot:GetHeight())</OnInitialized>
-		</TopLevelControl>
+		</TopLevelControl-->
 		<TopLevelControl name="AG_Panel" hidden="true" clampedToScreen="true" movable="true" mouseEnabled="true" allowBringToTop="true">
 			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
 			<OnMouseUp>AG4.account.pos={self:GetLeft(),self:GetTop()}</OnMouseUp><Dimensions x="670" y="819"/>
