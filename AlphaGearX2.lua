@@ -136,12 +136,12 @@ function AG4.DrawButtonLine(mode,nr)
 	for x = 1,count[mode] do AG4.DrawButton(p,'Button',btn[mode],nr,x,46+42*(x-1),0) end
 end
 function AG4.DrawOptions(set)
-	local val, tex = {[true]='checked',[false]='unchecked'}, '|t16:16:esoui/art/buttons/checkbox_<<1>>.dds|t |t2:2:x.dds|t '
+	local val, tex, count = {[true]='checked',[false]='unchecked'}, '|t16:16:esoui/art/buttons/checkbox_<<1>>.dds|t |t2:2:x.dds|t ', 1
 	if not set then
-		local w,h,c = L.OptionWidth, #L.Options*25+20
+		local w,c = L.OptionWidth
 		for x,opt in pairs(L.Options) do
-			c = WM:CreateControl('AG_Option_'..x, AG_PanelOptionPanel, CT_BUTTON)
-			c:SetAnchor(3,AG_PanelOptionPanel,3,10,10+(x-1)*25)
+			c = WM:CreateControl('AG_Option_'..count, AG_PanelOptionPanel, CT_BUTTON)
+			c:SetAnchor(3,AG_PanelOptionPanel,3,10,10+(count-1)*25)
 			c:SetDimensions(w-20,25)
 			if opt == '-' then
 				c:SetNormalTexture('AlphaGearX2/row.dds')
@@ -152,11 +152,12 @@ function AG4.DrawOptions(set)
 				c:SetHorizontalAlignment(0)
 				c:SetVerticalAlignment(1)
 				c:SetClickSound('Click')
-				c:SetHandler('OnClicked',function(self) AG4.DrawOptions(x) end)
-				c:SetText(ZOSF(tex,val[AG4.account.option[x]])..opt)
+				c:SetHandler('OnClicked',function(self) AG4.DrawOptions(count) end)
+				c:SetText(ZOSF(tex,val[AG4.account.option[count]])..opt)
 			end
+			count = count + 1
 		end
-		AG_PanelOptionPanel:SetDimensions(w,h)
+		AG_PanelOptionPanel:SetDimensions(w,count*25+20)
 	else
 		AG4.account.option[set] = not AG4.account.option[set]
 		WM:GetControlByName('AG_Option_'..set):SetText(ZOSF(tex,val[AG4.account.option[set]])..L.Options[set])
@@ -462,10 +463,13 @@ end
 function AG4.LoadSet(nr)
 	if not nr then return end
 	AG4.account.lastset = nr
-	local pair,_ = GetActiveWeaponPairInfo()
+	AG4.SwapMessage()
+	local pair = GetActiveWeaponPairInfo()
 	if AG4.setdata[nr].Set.gear > 0 then AG4.LoadGear(AG4.setdata[nr].Set.gear,nr) end
 	if AG4.setdata[nr].Set.skill[pair] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[pair]) end
 	SWAP = true
+	-- AG4.UpdateCharge(nil,BAG_WORN)
+	-- zo_callLater(AG4.SwapMessage,100)
 end
 
 function AG4.Undress(mode)
@@ -506,23 +510,20 @@ function AG4.ScrollText()
 	end
 	MESSAGE = ZO_ObjectPool:New(DrawControl,ClearControl)
 end
-function AG4.Slide(c,from,to)
-	local ease = ZO_GenerateCubicBezierEase(1,.02,.7,1.25)
+function AG4.Slide(c,x)
+	local ease = ZO_GenerateCubicBezierEase(1,0,.7,1.3)
     local a = ANIMATION_MANAGER:CreateTimeline()
     local s = a:InsertAnimation(ANIMATION_TRANSLATE,c)
     local fi = a:InsertAnimation(ANIMATION_ALPHA,c)
-    -- local fo = a:InsertAnimation(ANIMATION_ALPHA,c,1000)
+	local pos = GuiRoot:GetWidth()-x:GetRight()
     fi:SetAlphaValues(0,1)
-    fi:SetDuration(50)
-    s:SetStartOffsetX(from)
-    s:SetEndOffsetX(to)
+    fi:SetDuration(150)
+    s:SetStartOffsetX(pos)
+    s:SetEndOffsetX(5+(x:GetRight()-ActionButton8:GetRight()))
     s:SetStartOffsetY(0)
     s:SetEndOffsetY(0)
-    s:SetDuration(1000)
-    -- fo:SetAlphaValues(1,0)
-    -- fo:SetDuration(50)
-	a:SetEasingFunction(ease)
-	-- a:SetEasingFunction(ZO_EaseInQuintic)
+    s:SetDuration(400)
+	s:SetEasingFunction(ease)
 	a:PlayFromStart()
 end
 
@@ -728,7 +729,7 @@ function AG4.SetConnection(c,button)
 end
 function AG4.SetSetLock()
 	if SELECT then
-		local set = AG4.setdata[SELECT].Set
+		local set,c = AG4.setdata[SELECT].Set
 		c = AG_PanelSetPanelScrollChildEditPanelGearLockTex
 		if set.lock == 0 then
 			set.lock = 1
@@ -814,28 +815,34 @@ function AG4.ShowMain()
 	SM:ToggleTopLevel(AG_Panel)
 	if not AG_Panel:IsHidden() then AG4.UpdateUI() end
 end
+function AG4.SwapMessage()
+	if AG4.account.option.SHOW_BAR_SWAP then
+		local pair,x,tex,set = GetActiveWeaponPairInfo()
+		set = AG4.setdata[AG4.account.lastset].Set
+		if FUNC2 then MESSAGE:ReleaseObject(FUNC2) end
+		FUNC1,FUNC2 = MESSAGE:AcquireObject()
+		FUNC1:SetHidden(false)
+		x = ActionButton8
+		if not AG_Repair:IsHidden() then x = AG_Repair end
+		if not AG_Charge1:IsHidden() then x = AG_Charge1 end
+		if not AG_Charge2:IsHidden() then x = AG_Charge2 end
+		tex = set.icon[pair]
+		if tex == 0 then tex = 'AlphaGearX2/'..AG4.GetSetIcon(set.gear,pair)..'.dds' else tex = 'AlphaGearX2/'..tex..'.dds' end
+		FUNC1:SetAnchor(3,ActionButton8,9,0,0)
+		FUNC1:GetChild(1):SetTexture(tex)
+		FUNC1:GetChild(2):SetText('['..AG4.account.lastset..'] '..(set.text[1] or 'Set '..AG4.account.lastset)..'\n|cFFFFFF'..(set.text[pair + 1] or 'ActionBar '..pair))
+		AG4.Slide(FUNC1,x)
+	end
+end
 function AG4.Swap(_,isSwap)
     if isSwap and not IsBlockActive()then
-		local pair,x = GetActiveWeaponPairInfo()
 		if AG4.account.lastset and SWAP then
+			local pair = GetActiveWeaponPairInfo()
 			if AG4.setdata[AG4.account.lastset].Set.skill[pair] > 0 then AG4.LoadBar(AG4.setdata[AG4.account.lastset].Set.skill[pair]) end
 			SWAP = false
 		end
-		if AG4.account.option.SHOW_BAR_SWAP then
-			if FUNC2 then MESSAGE:ReleaseObject(FUNC2) end
-			FUNC1,FUNC2 = MESSAGE:AcquireObject()
-			c:SetHidden(false)
-			x = ActionButton8:GetRight()
-			if not AG_Repair:IsHidden() then x = AG_Repair:GetRight() end
-			if not AG_Charge1:IsHidden() then x = AG_Charge1:GetRight() end
-			if not AG_Charge2:IsHidden() then x = AG_Charge2:GetRight() end
-			c:SetAnchor(3,ActionButton8,9,GuiRoot:GetWidth()-ActionButton8:GetRight(),0)
-			c:GetChild(1):SetTexture(AG4.setdata[AG4.account.lastset].Set.icon[pair])
-			c:GetChild(2):SetText(AG4.setdata[AG4.account.lastset].Set.text[1])
-			AG4.Slide(c,GuiRoot:GetWidth(),x + 5)
-			-- zo_callLater(function() MESSAGE:ReleaseObject(x) end,1010)
-		end
 		AG4.UpdateCharge(nil,BAG_WORN)
+		AG4.SwapMessage()
     end
 end
 function AG4.MenuAction(nr)
@@ -936,14 +943,19 @@ function AG4.TooltipShow(control,id)
 				end
 			end
 		end
-		if sets ~= '' then control:AddLine(ZOSF(L.SetPart,sets),"ZoFontGameSmall")end
+		if sets ~= '' then control:AddLine(ZOSF(L.SetPart,sets),"ZoFontGameSmall") end
 	end
 end
 function AG4.TooltipHandle()
-	local tt = ItemTooltip.SetBagItem
-	ItemTooltip.SetBagItem = function(c,bag,slot,...)
-		tt(c,bag,slot,...)
-		AG.TooltipShow(c,Id64ToString(GetItemUniqueId(bag,slot)))
+	-- local tt = ItemTooltip.SetBagItem
+	-- ItemTooltip.SetBagItem = function(c,bag,slot,...)
+		-- tt(c,bag,slot,...)
+		-- AG4.TooltipShow(c,Id64ToString(GetItemUniqueId(bag,slot)))
+	-- end
+	local tt=ItemTooltip.SetBagItem
+	ItemTooltip.SetBagItem=function(control,bagId,slotIndex,...)
+		tt(control,bagId,slotIndex,...)
+		AG4.TooltipShow(control,Id64ToString(GetItemUniqueId(bagId,slotIndex)))
 	end
 end
 
@@ -1032,7 +1044,7 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 	AG4.DrawInventory()
 	AG4.DrawOptions()
 	AG4.ResetPosition()
-	AG4.TooltipHandle()
+	-- AG4.TooltipHandle()
 	AG4.SetOptions()
 	AG4.ScrollText()
 	SELECT = AG4.account.lastset
