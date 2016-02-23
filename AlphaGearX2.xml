@@ -2,7 +2,7 @@
 	<Font name="AGFont" font="$(MEDIUM_FONT)|18"/>
 	<Font name="AGFontSmall" font="$(BOLD_FONT)|14"/>
 	<Font name="AGFontBold" font="$(BOLD_FONT)|22"/>
-	<Font name="AGFontBig" font="$(BOLD_FONT)|24|soft-shadow-thick"/>
+	<Font name="AGFontBig" font="$(BOLD_FONT)|18|soft-shadow-thick"/>
     <Controls>
 		<Backdrop name="AG_UI_ButtonBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="true" movable="true" mouseEnabled="true">
 			<Anchor point="3" relativePoint="3" relativeTo="GuiRoot" offsetX="50" offsetY="100"/>
@@ -17,11 +17,17 @@
 			<OnMouseExit>AG4.Tooltip(self,false)</OnMouseExit>
 			<OnClicked>AG4.ShowMain()</OnClicked>
 		</Button>
+		<Backdrop name="AG_SetButtonBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="true" movable="true" mouseEnabled="true">
+			<Anchor point="4" relativePoint="3" relativeTo="ActionButton1" offsetX="-10"/>
+			<Dimensions x="205" y="65"/><Edge edgeSize="1"/><OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+			<OnMouseEnter>WINDOW_MANAGER:SetMouseCursor(12);self:SetAlpha(1)</OnMouseEnter>
+			<OnMouseExit>WINDOW_MANAGER:SetMouseCursor(0);self:SetAlpha(0)</OnMouseExit>
+			<OnMouseUp>AG4.account.setbuttons={ActionButton1:GetLeft()-self:GetLeft(),ActionButton1:GetTop()-self:GetTop()}</OnMouseUp>
+		</Backdrop>
+		<Control name="AG_SetButtonFrame" topmost="true"><Anchor point="128" relativePoint="128" relativeTo="AG_SetButtonBg"/>
+			<Dimensions x="185" y="45"/><OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+		</Control>
 
-		<!--TopLevelControl name="AG_SwapScreen" level="0">
-			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
-			<OnInitialized>self:SetDimensions(GuiRoot:GetWidth(),GuiRoot:GetHeight())</OnInitialized>
-		</TopLevelControl-->
 		<TopLevelControl name="AG_Panel" hidden="true" clampedToScreen="true" movable="true" mouseEnabled="true" allowBringToTop="true">
 			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
 			<OnMouseUp>AG4.account.pos={self:GetLeft(),self:GetTop()}</OnMouseUp><Dimensions x="670" y="819"/>
@@ -58,6 +64,15 @@
 							<OnInitialized>self:SetText(AG4[GetCVar('language.2')].Clear)</OnInitialized>
 							<OnClicked>AG4.MenuAction(4)</OnClicked>
 						</Button>
+					</Controls>
+				</Backdrop>
+				<Backdrop name="$(parent)Icons" centerColor="598527" edgeColor="598527" hidden="true" tier="2" inherits="ZO_ScrollContainerBase">
+					<Anchor point="6" relativePoint="9" relativeTo="$(parent)"/><Dimensions x="227" y="212"/><Edge edgeSize="5"/>
+					<OnInitialized>ZO_Scroll_Initialize(self)</OnInitialized>
+					<Controls>
+						<Control name="$(parent)ScrollChild" resizeToFitDescendents="true">
+							<OnInitialized>self:SetParent(self:GetParent():GetNamedChild("Scroll"));self:SetAnchor(3,nil,3,0,0)</OnInitialized>
+						</Control>
 					</Controls>
 				</Backdrop>
 				<Label name="$(parent)Headline" font="AGFont" color="FFFFFF">
@@ -138,7 +153,7 @@
 										<Button name="$(parent)Bar1Icon" clickSound="Click">
 											<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="50" offsetY="124"/><Dimensions x="89" y="82"/>
 											<Textures normal="AlphaGearX2/grey1.dds" mouseOver="AlphaGearX2/light.dds"/>
-											<OnClicked></OnClicked>
+											<OnClicked>AG4.ShowIconMenu(self,1)</OnClicked>
 											<Controls><Texture name="$(parent)Tex"><Anchor point="128" relativeTo="$(parent)"/><Dimensions x="64" y="64"/></Texture></Controls>
 										</Button>
 										<Control name="$(parent)Weap1Box"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="141" offsetY="124"/><Dimensions x="40" y="82"/></Control>
@@ -165,7 +180,7 @@
 										<Button name="$(parent)Bar2Icon" clickSound="Click">
 											<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="50" offsetY="248"/><Dimensions x="89" y="82"/>
 											<Textures normal="AlphaGearX2/grey1.dds" mouseOver="AlphaGearX2/light.dds"/>
-											<OnClicked></OnClicked>
+											<OnClicked>AG4.ShowIconMenu(self,2)</OnClicked>
 											<Controls><Texture name="$(parent)Tex"><Anchor point="128" relativeTo="$(parent)"/><Dimensions x="64" y="64"/></Texture></Controls>
 										</Button>
 										<Control name="$(parent)Weap2Box"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="141" offsetY="248"/><Dimensions x="40" y="82"/></Control>
