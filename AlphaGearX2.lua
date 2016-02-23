@@ -5,10 +5,9 @@ AG4.account = {}
 AG4.setdata = {}
 local L, ZOSF, FUNC1, FUNC2 = AG4[GetCVar('language.2')] or AG4.en, zo_strformat, nil, nil
 local QUALITY = {[0]={0.65,0.65,0.65,1},[1]={1,1,1,1},[2]={0.17,0.77,0.05,1},[3]={0.22,0.57,1,1},[4]={0.62,0.18,0.96,1},[5]={0.80,0.66,0.10,1}}
-local QUALITYHEX = {[0]='B3B3B3',[1]='FFFFFF',[2]='2DC50E',[3]='3A92FF',[4]='A02EF7',[5]='EECA2A'}
 local MAXSLOT, MENU, SELECT, SELECTBAR, DRAGINFO, TTANI, SWAP = 16, { nr = nil, type = nil, copy = nil }, false, false, {}, false, false
-local EM, WM, SM, MESSAGE = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER
-local GEARQUEUE, EQUIP, UNEQUIP, SLOTS, DUPSLOTS = {}, {}, {}, {
+local EM, WM, SM, ICON, MESSAGE = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, {}
+local GEARQUEUE, SLOTS, DUPSLOTS = {}, {
 {EQUIP_SLOT_MAIN_HAND,'mainhand','MainHand'},
 {EQUIP_SLOT_OFF_HAND,'offhand','OffHand'},
 {EQUIP_SLOT_BACKUP_MAIN,'mainhand','BackupMain'},
@@ -73,7 +72,7 @@ function AG4.DrawInventory()
 		end
 		s = WM:CreateControl('AG_InvBg'..c[1]..'Condition', p, CT_LABEL)
 		s:SetFont('ZoFontGameSmall')
-		s:SetAnchor(TOPRIGHT,p,TOPRIGHT,7,-2)
+		s:SetAnchor(TOPRIGHT,p,TOPRIGHT,7,-8)
 		s:SetDimensions(50,10)
 		s:SetHidden(true)
 		s:SetHorizontalAlignment(2)
@@ -136,14 +135,18 @@ function AG4.DrawButtonLine(mode,nr)
 	for x = 1,count[mode] do AG4.DrawButton(p,'Button',btn[mode],nr,x,46+42*(x-1),0) end
 end
 function AG4.DrawOptions(set)
-	local val, tex, count = {[true]='checked',[false]='unchecked'}, '|t16:16:esoui/art/buttons/checkbox_<<1>>.dds|t |t2:2:x.dds|t ', 1
+	local val, tex = {[true]='checked',[false]='unchecked'}, '|t16:16:esoui/art/buttons/checkbox_<<1>>.dds|t |t2:2:x.dds|t '
+	local count,real,text = 1,1
+	local function tcom(a,b) return a[2] < b[2] end
+	table.sort(L.Options,tcom)
 	if not set then
 		local w,c = L.OptionWidth
-		for x,opt in pairs(L.Options) do
+		for _,opt in pairs(L.Options) do
 			c = WM:CreateControl('AG_Option_'..count, AG_PanelOptionPanel, CT_BUTTON)
 			c:SetAnchor(3,AG_PanelOptionPanel,3,10,10+(count-1)*25)
 			c:SetDimensions(w-20,25)
-			if opt == '-' then
+			text = string.match(opt[1],'(#|)(%a+)')
+			if text[1] == '#' then
 				c:SetNormalTexture('AlphaGearX2/row.dds')
 			else
 				c:SetNormalFontColor(1,1,1,1)
@@ -153,14 +156,15 @@ function AG4.DrawOptions(set)
 				c:SetVerticalAlignment(1)
 				c:SetClickSound('Click')
 				c:SetHandler('OnClicked',function(self) AG4.DrawOptions(count) end)
-				c:SetText(ZOSF(tex,val[AG4.account.option[count]])..opt)
+				c:SetText(ZOSF(tex,val[AG4.account.option[count]])..text[1])
+				count = count + 1
 			end
-			count = count + 1
+			real = real + 1
 		end
-		AG_PanelOptionPanel:SetDimensions(w,count*25+20)
+		AG_PanelOptionPanel:SetDimensions(w,(real-1)*25+20)
 	else
 		AG4.account.option[set] = not AG4.account.option[set]
-		WM:GetControlByName('AG_Option_'..set):SetText(ZOSF(tex,val[AG4.account.option[set]])..L.Options[set])
+		WM:GetControlByName('AG_Option_'..set):SetText(ZOSF(tex,val[AG4.account.option[set]])..L.Options[set][1])
 		AG4.SetOptions()
 	end
 end
@@ -254,11 +258,6 @@ function AG4.DrawSet(nr)
 	p:SetCenterColor(0,0,0,0.2)
 	p:SetEdgeColor(0,0,0,0)
 	p:SetEdgeTexture('',1,1,2)
-end
-function AG4.ReadIcons()
-	for file in io.popen([[dir "C:\Program Files\" /b]]):lines() do
-		print(file)
-	end
 end
 
 function AG4.GetKey(keyStr)
@@ -519,7 +518,7 @@ function AG4.Slide(c,x)
     fi:SetAlphaValues(0,1)
     fi:SetDuration(150)
     s:SetStartOffsetX(pos)
-    s:SetEndOffsetX(5+(x:GetRight()-ActionButton8:GetRight()))
+    s:SetEndOffsetX(10+(x:GetRight()-ActionButton8:GetRight()))
     s:SetStartOffsetY(0)
     s:SetEndOffsetY(0)
     s:SetDuration(400)
@@ -766,6 +765,11 @@ function AG4.SetOptions()
 		EM:UnregisterForEvent('AG_Event_Condition',EVENT_INVENTORY_SINGLE_SLOT_UPDATE)
 		for _,c in pairs(SLOTS) do AG4.UpdateCondition(_,BAG_WORN,c[1]) end
 	end
+	
+	if AG4.account.option.MOVEMENT_CLOSE then EM:RegisterForEvent('AG_Event_Movement',EVENT_NEW_MOVEMENT_IN_UI_MODE,AG4.ShowMain)
+	else EM:UnregisterForEvent('AG_Event_Movement',EVENT_NEW_MOVEMENT_IN_UI_MODE) end
+
+	if not AG4.account.option.SHOW_EQUIPPED_SET then if FUNC2 then MESSAGE:ReleaseObject(FUNC2) end end
 	AG_UI_Button:SetHidden(not AG4.account.option.SHOW_BUTTON)
 	AG_UI_ButtonBg:SetHidden(not AG4.account.option.SHOW_BUTTON)
 	AG_UI_ButtonBg:SetMouseEnabled(not AG4.account.option.LOCK_INTERFACE)
@@ -781,6 +785,39 @@ function AG4.ResetPosition()
 	AG_Panel:SetAnchor(3,GuiRoot,3,AG4.account.pos[1],AG4.account.pos[2])
 	AG_UI_ButtonBg:ClearAnchors()
 	AG_UI_ButtonBg:SetAnchor(3,GuiRoot,3,AG4.account.button[1],AG4.account.button[2])
+end
+function AG4.ShowIconMenu(c,bar)
+	AG_PanelIcons:SetAnchor(6,c,9,0,0)
+	AG_PanelIcons:ToggleHidden()
+	if not AG_PanelIcons:IsHidden() then
+		for x = 1,WM:GetNumChildren(AG_PanelIconsScrollChild) do AG_PanelIconsScrollChild:GetChild(x):SetHidden(true) end
+		local xpos,ypos,name,c = 0, 0
+		for x,icon in pairs(ICON) do
+			name = 'AG_SetIcon_'..x
+			c = WM:GetControlByName(name)
+			if not c then
+				c = WM:CreateControl(name,AG_PanelIconsScrollChild,CT_BUTTON)
+				c:SetAnchor(3,AG_PanelIconsScrollChild,3,xpos,ypos)
+				c:SetDimensions(64,64)
+				c:SetClickSound('Click')
+				c:SetMouseOverTexture('AlphaGearX2/light.dds')
+				c:SetHandler('OnClicked',function(self)
+					if SELECT > 0 then
+						AG4.setdata[SELECT].Set.icon[bar] = self.data.texname
+						-- AG4.setdata[SELECT].Set.icon[bar] = icon
+						AG_PanelIcons:SetHidden(true)
+						AG4.UpdateEditPanel(SELECT)
+					end
+				end)
+				if xpos == 138 then xpos = 0; ypos = ypos + 69
+				else xpos = xpos + 69 end
+			end
+			c.data = { texname = icon }
+			c:SetNormalTexture(icon)
+			c:SetHidden(false)
+		end
+		AG_PanelIconsScrollChild:SetHeight(#ICON*69+1)
+	end
 end
 function AG4.ShowButton(c)
 	if not c then return false end
@@ -826,12 +863,24 @@ function AG4.SwapMessage()
 		if not AG_Repair:IsHidden() then x = AG_Repair end
 		if not AG_Charge1:IsHidden() then x = AG_Charge1 end
 		if not AG_Charge2:IsHidden() then x = AG_Charge2 end
-		tex = set.icon[pair]
-		if tex == 0 then tex = 'AlphaGearX2/'..AG4.GetSetIcon(set.gear,pair)..'.dds' else tex = 'AlphaGearX2/'..tex..'.dds' end
+		if set.gear ~= 0 then
+			if AG4.setdata[set.gear].Gear[pair+(1+pair)].id ~= 0 then
+				tex = set.icon[pair]
+				if tex == 0 then tex = 'AlphaGearX2/'..AG4.GetSetIcon(set.gear,1)..'.dds' else tex = 'AlphaGearX2/'..tex..'.dds' end
+			else tex = 'AlphaGearX2/none.dds' end
+		end
 		FUNC1:SetAnchor(3,ActionButton8,9,0,0)
 		FUNC1:GetChild(1):SetTexture(tex)
-		FUNC1:GetChild(2):SetText('['..AG4.account.lastset..'] '..(set.text[1] or 'Set '..AG4.account.lastset)..'\n|cFFFFFF'..(set.text[pair + 1] or 'ActionBar '..pair))
+		FUNC1:GetChild(2):SetText('Nr: '..AG4.account.lastset..' | '..(set.text[1] or 'Set '..AG4.account.lastset)..'\n|cFFFFFF'..(set.text[pair + 1] or 'ActionBar '..pair))
 		AG4.Slide(FUNC1,x)
+		if not AG4.account.option.SHOW_EQUIPPED_SET then
+			EM:RegisterForUpdate('AG_SwapCounter', 2000, function()
+				if FUNC2 then
+					MESSAGE:ReleaseObject(FUNC2)
+					EM:UnregisterForUpdate('AG_SwapCounter')
+				end
+			end)
+		end
 	end
 end
 function AG4.Swap(_,isSwap)
@@ -930,36 +979,32 @@ function AG4.Tooltip(c,visible,edit)
 		c.text = nil
 	end
 end
-function AG4.TooltipShow(control,id)
+function AG4.TooltipShow(c,id)
 	if AG4.account.option.MARK_INVENTORY and id then
-		local sets = ''
-		for x,set in pairs(AG4.setdata) do
-			if set.Set.gear ~= 0 then
-				for _,slot in pairs(set.gear[set.Set.gear]) do
-					if slot.id == id then
-						sets = sets..x..' '
-						break
-					end
-				end
-			end
-		end
-		if sets ~= '' then control:AddLine(ZOSF(L.SetPart,sets),"ZoFontGameSmall") end
+		local sets = 'test'
+		-- for x,set in pairs(AG4.setdata) do
+			-- if set.Set.gear ~= 0 then
+				-- for _,slot in pairs(set.gear[set.Set.gear]) do
+					-- if slot.id == id then
+						-- sets = sets..x..' '
+						-- break
+					-- end
+				-- end
+			-- end
+		-- end
+		if sets ~= '' then c:AddLine(ZOSF(L.SetPart,sets),"ZoFontGameSmall") end
 	end
 end
 function AG4.TooltipHandle()
-	-- local tt = ItemTooltip.SetBagItem
-	-- ItemTooltip.SetBagItem = function(c,bag,slot,...)
-		-- tt(c,bag,slot,...)
-		-- AG4.TooltipShow(c,Id64ToString(GetItemUniqueId(bag,slot)))
-	-- end
-	local tt=ItemTooltip.SetBagItem
-	ItemTooltip.SetBagItem=function(control,bagId,slotIndex,...)
-		tt(control,bagId,slotIndex,...)
-		AG4.TooltipShow(control,Id64ToString(GetItemUniqueId(bagId,slotIndex)))
+	local tt = ItemTooltip.SetBagItem
+	ItemTooltip.SetBagItem = function(c,bag,slot,...)
+		tt(c,bag,slot,...)
+		AG4.TooltipShow(c,Id64ToString(GetItemUniqueId(bag,slot)))
 	end
 end
 
 function KEYBINDING_MANAGER:IsChordingAlwaysEnabled() return true end
+function AlphaGear_RegisterIcon(icon) table.insert(ICON,icon or 'AlphaGearX2/none.dds') end
 
 EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 	if name ~= AG4.name then return end
@@ -974,7 +1019,6 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 			SHOW_REPAIR_ICON	= true,
 			SHOW_REPAIR_COST	= true,
 			SHOW_CHARGE_STATUS	= true,
-			SHOW_SET_SWAP		= true,
 			SHOW_BAR_SWAP		= true,
 			SHOW_EQUIPPED_SET	= true,
 			MARK_INVENTORY		= true,
@@ -986,6 +1030,7 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 		},
 		pos = {GuiRoot:GetWidth()/2 - 335, GuiRoot:GetHeight()/2 - 410},
 		button = {50,100},
+		setbuttons = {-10,0},
 		lastset = false,
 	}
 	local init_data = {}
@@ -1033,6 +1078,7 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 	ZO_PreHookHandler(ZO_PlayerInventory,'OnShow', function() AG4.SetPosition(ZO_PlayerInventory,0) end)
 	ZO_PreHookHandler(ZO_PlayerInventory,'OnHide', AG4.ResetPosition)
 	ZO_PreHookHandler(ZO_ChampionPerks,'OnShow', function() SM:HideTopLevel(AG_Panel) end)
+	ZO_PreHookHandler(AG_Panel,'OnHide', function() AG_PanelIcons:SetHidden(true); AG_PanelOptionPanel:SetHidden(true) end)
 	
 	AG_PanelSetPanel.useFadeGradient = false
 	AG_PanelGearPanel.useFadeGradient = false
@@ -1044,9 +1090,22 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 	AG4.DrawInventory()
 	AG4.DrawOptions()
 	AG4.ResetPosition()
-	-- AG4.TooltipHandle()
+	AG4.TooltipHandle()
 	AG4.SetOptions()
 	AG4.ScrollText()
+	
+	AlphaGear_RegisterIcon('AlphaGearX2/onehand.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/twohand.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/fire.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/frost.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/shock.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/heal.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/bow.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/shield.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/fist.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/skull.dds')
+	AlphaGear_RegisterIcon('AlphaGearX2/learn.dds')
+	
 	SELECT = AG4.account.lastset
 	AG4.init = true
 end)
