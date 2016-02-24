@@ -31,29 +31,21 @@ function AG4.TooltipSet(c,nr,visible)
 	if not c or not nr then return end
 	if visible then
 		local set,val = AG4.setdata[nr].Set
-		if set.Set.gear ~= 0 then
-			val = Zero(set.icon[1]) or AG4.GetSetIcon(set.gear,1)
-		else val = 'AlphaGearX2/none.dds' end
-		AG_SetTipSkill1Icon:SetTexture(val)
-		if set.Set.gear ~= 0 then
-			val = Zero(set.icon[2]) or AG4.GetSetIcon(set.gear,2)
-		else val = 'AlphaGearX2/none.dds' end
-		AG_SetTipSkill2Icon:SetTexture(val)
+		for z = 1,2 do
+			for x = 1,6 do
+				if AG4.setdata[set.Set.skill[z]].Skill[x][1] ~= 0 then
+					_,val = GetSkillAbilityInfo(unpack(AG4.setdata[set.Set.skill[z]].Skill[x]))
+				else val = 'AlphaGearX2/grey1.dds' end
+			end
+			WM:GetControlByName('AG_SetTipBar'..z..'Skills'):SetText('|t40:40:'..val..'|t ')
+			if set.Set.gear ~= 0 then
+				val = Zero(set.icon[z]) or AG4.GetSetIcon(set.gear,z)
+			else val = 'AlphaGearX2/none.dds' end
+			WN:GetControlByName('AG_SetTipSkill'..z..'Icon'):SetTexture(val)
+		end
 		AG_SetTipName:SetText(Zero(set.text[1]) or 'Set '..nr)
 		AG_SetTipBar1Name:SetText(Zero(set.text[2]) or 'Action-Bar 1')
 		AG_SetTipBar2Name:SetText(Zero(set.text[3]) or 'Action-Bar 2')
-		for x = 1,6 do
-			if AG4.setdata[set.Set.skill[1]].Skill[x][1] ~= 0 then
-				_,val = GetSkillAbilityInfo(unpack(AG4.setdata[set.Set.skill[1]].Skill[x]))
-			else val = 'AlphaGearX2/grey1.dds' end
-		end
-		AG_SetTipBar1Skills:SetText('|t40:40:'..val..'|t ')
-		for x = 1,6 do
-			if AG4.setdata[set.Set.skill[2]].Skill[x][1] ~= 0 then
-				_,val = GetSkillAbilityInfo(unpack(AG4.setdata[set.Set.skill[2]].Skill[x]))
-			else val = 'AlphaGearX2/grey1.dds' end
-		end
-		AG_SetTipBar2Skills:SetText('|t40:40:'..val..'|t ')
 		AG_SetTip:SetAnchor(6,c,3,0,-2)
 		AG_SetTip:SetHidden(false)
 	else AG_SetTip:SetHidden(true) end
