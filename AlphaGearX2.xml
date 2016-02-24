@@ -17,16 +17,6 @@
 			<OnMouseExit>AG4.Tooltip(self,false)</OnMouseExit>
 			<OnClicked>AG4.ShowMain()</OnClicked>
 		</Button>
-		<Backdrop name="AG_SetButtonBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="true" movable="true" mouseEnabled="true">
-			<Anchor point="4" relativePoint="3" relativeTo="ActionButton1" offsetX="-10"/>
-			<Dimensions x="205" y="65"/><Edge edgeSize="1"/><OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
-			<OnMouseEnter>WINDOW_MANAGER:SetMouseCursor(12);self:SetAlpha(1)</OnMouseEnter>
-			<OnMouseExit>WINDOW_MANAGER:SetMouseCursor(0);self:SetAlpha(0)</OnMouseExit>
-			<OnMouseUp>AG4.account.setbuttons={ActionButton1:GetLeft()-self:GetLeft(),ActionButton1:GetTop()-self:GetTop()}</OnMouseUp>
-		</Backdrop>
-		<Control name="AG_SetButtonFrame" topmost="true"><Anchor point="128" relativePoint="128" relativeTo="AG_SetButtonBg"/>
-			<Dimensions x="185" y="45"/><OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
-		</Control>
 
 		<TopLevelControl name="AG_Panel" hidden="true" clampedToScreen="true" movable="true" mouseEnabled="true" allowBringToTop="true">
 			<Anchor point="128" relativePoint="128" relativeTo="GuiRoot"/>
@@ -66,11 +56,11 @@
 						</Button>
 					</Controls>
 				</Backdrop>
-				<Backdrop name="$(parent)Icons" centerColor="598527" edgeColor="598527" hidden="true" tier="2" inherits="ZO_ScrollContainerBase">
-					<Anchor point="6" relativePoint="9" relativeTo="$(parent)"/><Dimensions x="227" y="212"/><Edge edgeSize="5"/>
+				<Backdrop name="$(parent)Icons" centerColor="598527" edgeColor="00000000" hidden="true" tier="2" inherits="ZO_ScrollContainerBase">
+					<Anchor point="6" relativePoint="9" relativeTo="$(parent)"/><Dimensions x="233" y="217"/><Edge edgeSize="1"/>
 					<OnInitialized>ZO_Scroll_Initialize(self)</OnInitialized>
 					<Controls>
-						<Control name="$(parent)ScrollChild" resizeToFitDescendents="true">
+						<Control name="$(parent)ScrollChild">
 							<OnInitialized>self:SetParent(self:GetParent():GetNamedChild("Scroll"));self:SetAnchor(3,nil,3,0,0)</OnInitialized>
 						</Control>
 					</Controls>
@@ -120,9 +110,9 @@
 									<Controls>
 										<Button name="$(parent)GearConnector" clickSound="Click" horizontalAlignment="1" verticalAlignment="1" font="AGFontBold">
 											<Anchor point="3" relativePoint="3" relativeTo="$(parent)"/><Dimensions x="48" y="82"/>
-											<Textures normal="AlphaGearX2/grey1.dds" mouseOver="AlphaGearX2/light.dds"/>
+											<Textures normal="AlphaGearX2/grey1.dds" mouseOver="AlphaGearX2/light.dds"/><MouseButton button="2" enabled="true"/>
 											<OnMouseEnter>AG4.Tooltip(self,true)</OnMouseEnter><OnMouseExit>AG4.Tooltip(self,false)</OnMouseExit>
-											<OnClicked>AG4.SetConnection(...)</OnClicked>
+											<OnMouseDown>AG4.SetConnection(...)</OnMouseDown>
 										</Button>
 										<Button name="$(parent)GearLock" clickSound="Click">
 											<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="50"/><Dimensions x="47" y="82"/>
@@ -238,28 +228,28 @@
 			</Controls>
 		</Button>
 		
-		<TopLevelControl name="AG_SetTip" hidden="true"><Anchor point="3" relativePoint="9" relativeTo="AG_Panel"/><Dimensions x="400" y="400"/>
+		<Backdrop name="AG_SetButtonBg" alpha="0" centerColor="40FF0000" edgeColor="60FF0000" clampedToScreen="true" movable="true" mouseEnabled="true" topmost="true">
+			<Anchor point="3" relativePoint="3" relativeTo="AG_Charge1"/>
+			<Dimensions x="247" y="73"/><Edge edgeSize="1"/><OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+			<OnMouseEnter>WINDOW_MANAGER:SetMouseCursor(12);self:SetAlpha(1)</OnMouseEnter>
+			<OnMouseExit>WINDOW_MANAGER:SetMouseCursor(0);self:SetAlpha(0)</OnMouseExit>
+			<OnMouseUp>AG4.account.setbuttons={self:GetLeft()-AG_Charge1:GetLeft(),self:GetTop()-AG_Charge1:GetTop()}</OnMouseUp>
+		</Backdrop>
+		<Control name="AG_SetButtonFrame"><Anchor point="128" relativePoint="128" relativeTo="AG_SetButtonBg"/>
+			<Dimensions x="227" y="53"/><OnInitialized>self:SetParent(ZO_ActionBar1)</OnInitialized>
+		</Control>
+		<TopLevelControl name="AG_SetTip" hidden="true"><Anchor point="6" relativePoint="3" relativeTo="AG_Charge1"/><Dimensions x="350" y="188"/>
 			<Controls>
-				<Backdrop name="$(parent)Bg" centerColor="282828" edgeColor="000000" hidden="true">	<Edge edgeSize="1"/><AnchorFill/></Backdrop>
-				<Label name="$(parent)Name" font="AGFontBold" color="FFAA33" horizontalAlignment="1" verticalAlignment="1">
-					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="5"/><Dimensions x="400" y="30"/>
+				<Backdrop name="$(parent)Bg" centerColor="EE101010" edgeColor="00000000"><Edge edgeSize="1"/><AnchorFill/></Backdrop>
+				<Label name="$(parent)Name" font="AGFontBold" color="FFAA33" horizontalAlignment="0" verticalAlignment="1">
+					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetX="5" offsetY="7" wrapMode="1"/><Dimensions x="340" y="25"/>
 				</Label>
-				<Backdrop name="$(parent)Skills1" centerColor="383838" edgeColor="00000000" hidden="true">
-					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="37"/><Dimensions x="400" y="82"/><Edge edgeSize="1"/>
-					<Controls>
-						<Texture name="$(parent)Skill1Icon" color="FFFFFF"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="2"/><Dimensions x="64" y="64"/></Texture>
-						<Label name="$(parent)Bar1Name" font="AGFont" color="FFAA33" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="72" offsetY="2"/><Dimensions x="265" y="40"/></Label>
-						<Label name="$(parent)Bar1Skills"><Anchor point="6" relativePoint="6" relativeTo="$(parent)" offsetX="72" offsetY="-2"/><Dimensions x="265" y="40"/></Label>
-					</Controls>
-				</Backdrop>
-				<Backdrop name="$(parent)Skills2" centerColor="383838" edgeColor="00000000" hidden="true">
-					<Anchor point="1" relativePoint="1" relativeTo="$(parent)" offsetY="121"/><Dimensions x="400" y="82"/><Edge edgeSize="1"/>
-					<Controls>
-						<Texture name="$(parent)Skill2Icon" color="FFFFFF"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="2"/><Dimensions x="64" y="64"/></Texture>
-						<Label name="$(parent)Bar2Name" font="AGFont" color="FFAA33" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="72" offsetY="2"/><Dimensions x="265" y="40"/></Label>
-						<Label name="$(parent)Bar2Skills"><Anchor point="6" relativePoint="6" relativeTo="$(parent)" offsetX="72" offsetY="-2"/><Dimensions x="265" y="40"/></Label>
-					</Controls>
-				</Backdrop>
+				<Texture name="$(parent)Skill1Icon"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="40"/><Dimensions x="64" y="64"/></Texture>
+				<Label name="$(parent)Bar1Name" font="AGFont" color="FFFFFF" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="79" offsetY="40"/><Dimensions y="24"/></Label>
+				<Label name="$(parent)Bar1Skills" font="AGFont" color="FFFFFF" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="79" offsetY="65"/><Dimensions x="265" y="40"/></Label>
+				<Texture name="$(parent)Skill2Icon"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="10" offsetY="109"/><Dimensions x="64" y="64"/></Texture>
+				<Label name="$(parent)Bar2Name" font="AGFont" color="FFFFFF" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="79" offsetY="109"/><Dimensions y="24"/></Label>
+				<Label name="$(parent)Bar2Skills" font="AGFont" color="FFFFFF" verticalAlignment="1"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="79" offsetY="134"/><Dimensions x="265" y="40"/></Label>
 			</Controls>
 		</TopLevelControl>
 		
