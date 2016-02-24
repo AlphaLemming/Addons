@@ -1,122 +1,8 @@
-				<Backdrop name="$(parent)OptionPanel" centerColor="598527" edgeColor="00000000" hidden="true">
-					<Anchor point="9" relativePoint="9" relativeTo="$(parent)" offsetX="-10" offsetY="35"/><Edge edgeSize="1"/>
-					<Controls></Controls>
-				</Backdrop>
-				
-				<Control name="$(parent)EditPanel" hidden="true"><Dimensions x="307" y="350"/>
-					<Controls>
-						<Button name="$(parent)GearConnector" clickSound="Click" horizontalAlignment="1" verticalAlignment="1" font="AGFontBold">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)"/><Dimensions x="48" y="82"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-						</Button>
-						<Button name="$(parent)GearLock" clickSound="Click">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="50"/><Dimensions x="47" y="82"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-							<Controls><Texture name="$(parent)Tex" textureFile="AlphaGearX2/unlocked.dds"><Anchor point="128"/><Dimensions x="32" y="32"/></Texture></Controls>
-						</Button>
-						<Control name="$(parent)Gear1Box"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="99"/><Dimensions x="208" y="40"/></Control>
-						<Control name="$(parent)Gear2Box"><Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="99" offsetY="42"/><Dimensions x="208" y="40"/></Control>
-						
-						<Button name="$(parent)Bar1Name" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="AGFont">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetY="92"/><Dimensions x="307" y="40"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-						</Button>
-						<Button name="$(parent)Bar1Connector" clickSound="Click" horizontalAlignment="1" verticalAlignment="1" font="AGFontBold">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetY="134"/><Dimensions x="48" y="82"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-						</Button>
-						<Button name="$(parent)Bar1Icon" clickSound="Click">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="50" offsetY="134"/><Dimensions x="89" y="82"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-							<Controls><Texture name="$(parent)Tex"><Anchor point="128" relativeTo="$(parent)"/><Dimensions x="64" y="64"/></Texture></Controls>
-						</Button>
-						<Control name="$(parent)Weap1Box"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="141" offsetY="134"/><Dimensions x="40" y="82"/></Control>
-						<Control name="$(parent)Skill11Box"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="182" offsetY="134"/><Dimensions x="124" y="40"/></Control>
-						<Control name="$(parent)Skill12Box"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="182" offsetY="176"/><Dimensions x="124" y="40"/></Control>
-						
-						<Button name="$(parent)Bar2Name" clickSound="Click" horizontalAlignment="0" verticalAlignment="1" font="AGFont">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetY="226"/><Dimensions x="307" y="40"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-						</Button>
-						<Button name="$(parent)Bar2Connector" clickSound="Click" horizontalAlignment="1" verticalAlignment="1" font="AGFontBold">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetY="268"/><Dimensions x="48" y="82"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-						</Button>
-						<Button name="$(parent)Bar2Icon" clickSound="Click">
-							<Anchor point="3" relativePoint="3" relativeTo="$(parent)" offsetX="50" offsetY="268"/><Dimensions x="89" y="82"/>
-							<Textures normal="AlphaGearX2/grey.dds" mouseOver="AlphaGearX2/light.dds"/>
-							<OnClicked></OnClicked>
-							<Controls><Texture name="$(parent)Tex"><Anchor point="128" relativeTo="$(parent)"/><Dimensions x="64" y="64"/></Texture></Controls>
-						</Button>
-						<Control name="$(parent)Weap2Box"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="141" offsetY="268"/><Dimensions x="40" y="82"/></Control>
-						<Control name="$(parent)Skill21Box"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="183" offsetY="268"/><Dimensions x="124" y="40"/></Control>
-						<Control name="$(parent)Skill22Box"><Anchor point="2" relativePoint="2" relativeTo="$(parent)" offsetX="183" offsetY="310"/><Dimensions x="124" y="40"/></Control>
-					</Controls>
-				</Control>
-
-function AG4.DrawSet(nr)
-	if WM:GetControlByName('AG_SetSelector_'..nr) then return end
-	local p,l,s = WM:GetControlByName('AG_SetSelector_'..(nr-1)) or false
-	s = WM:CreateControl('AG_SetSelector_'..nr, AG_PanelSetPanelScrollChild, CT_BUTTON)
-	if p then s:SetAnchor(2,p,4,0,5) else s:SetAnchor(3,nil,3,0,0) end
-	s:SetDimensions(311,76)
-	s:SetClickSound('Click')
-	s:EnableMouseButton(2,true)
-	s:SetNormalTexture('AlphaGearX2/grey.dds')
-	s:SetMouseOverTexture('AlphaGearX2/light.dds')
-	s:SetHandler('OnMouseEnter',function(self) AG4.Tooltip(self,true) end)
-	s:SetHandler('OnMouseExit',function(self) AG4.Tooltip(self,false) end)
-	s:SetHandler('OnMouseDown',function(self,button)
-		if button == 2 then
-			SELECT = nr
-			AG_PanelEditPanel:ClearAnchors()
-			AG_PanelEditPanel:SetAnchor(6,self,6,-2,-2)
-			AG_PanelEditPanel:ToggleHidden()
-			if not AG_PanelEditPanel:Ishidden() then self:SetHeight(426) else self:SetHeight(76) end
-		elseif button == 1 then AG4.LoadSet(nr) end
-	end)
-	l = WM:CreateControl('AG_SetSelector_'..nr..'_Label', s, CT_LABEL)
-	l:SetAnchor(3,s,3,0,0)
-	l:SetDrawTier(1)
-	l:SetDimensions(44,44)
-	l:SetHorizontalAlignment(1)
-	l:SetVerticalAlignment(1)
-	l:SetFont('AGFontBold')
-	l:SetColor(1,1,1,0.8)
-	l:SetText(nr)
-	l = WM:CreateControl('AG_SetSelector_'..nr..'_KeyBind', s, CT_LABEL)
-	l:SetAnchor(9,s,9,-15,0)
-	l:SetDrawTier(1)
-	l:SetDimensions(235,44)
-	l:SetHorizontalAlignment(2)
-	l:SetVerticalAlignment(1)
-	l:SetFont('AGFont')
-	l:SetColor(1,1,1,0.5)
-	l = WM:CreateControl('AG_SetButton_'..nr..'_Box', s, CT_LABEL)
-	l:SetAnchor(3,s,3,2,44)
-	l:SetDrawTier(1)
-	l:SetDimensions(307,30)
-	l:SetHorizontalAlignment(0)
-	l:SetVerticalAlignment(1)
-	l:SetFont('AGFont')
-	l:SetColor(1,1,1,0.8)
-	s = WM:CreateControl('AG_SetButton_'..nr..'_BoxBg', l, CT_BACKDROP)
-	s:SetAnchorFill()
-	s:SetCenterColor(0,0,0,0.2)
-	s:SetEdgeColor(0,0,0,0)
-	s:SetEdgeTexture('',1,1,2)
-end
+local function Zero(val) if val == 0 then return nil else return val end end
 
 function AG4.GetSetIcon(nr,bar)
-	local icon = {
-		[WEAPONTYPE_NONE] = false,
+	local endicon,gear,icon = nil, AG4.setdata[nr].Gear, {
+		[WEAPONTYPE_NONE] = 'none',
 		[WEAPONTYPE_DAGGER] = 'onehand',
 		[WEAPONTYPE_HAMMER] = 'onehand',
 		[WEAPONTYPE_AXE] = 'onehand',
@@ -131,79 +17,127 @@ function AG4.GetSetIcon(nr,bar)
 		[WEAPONTYPE_BOW] = 'bow',
 		[WEAPONTYPE_SHIELD] = 'shield'
 	}
-	if bar == 1 then return icon[GetItemLinkWeaponType(AG4.setdata[nr].Set.Gear[1].link)] or false
-	else return icon[GetItemLinkWeaponType(AG4.setdata[nr].Set.Gear[3].link)] or false end
+	if bar == 1 then
+		if gear[2].link ~= 0 then endicon = icon[GetItemLinkWeaponType(gear[2].link)]
+		else endicon = icon[GetItemLinkWeaponType(gear[1].link)] end
+	else
+		if gear[4].link ~= 0 then endicon = icon[GetItemLinkWeaponType(gear[4].link)]
+		else endicon = icon[GetItemLinkWeaponType(gear[3].link)] end
+	end
+	if endicon then return 'AlphaGearX2/'..endicon..'.dds' else return nil end
 end
 
-function AG4.DrawOptions(set)
-	local val, tex = {[true]='checked',[false]='unchecked'}, '|t16:16:esoui/art/buttons/checkbox_<<1>>.dds|t  '
-	if not set then
-		local w,h,c,swatch = 400, #L.Options*25+20
-		for x,opt in pairs(L.Options) do
-			c = WM:CreateControl('AG_Option_'..x, AG_PanelOptionPanel, CT_BUTTON)
-			c:SetAnchor(3,AG_PanelOptionPanel,3,10,10+(x-1)*25)
-			c:SetDimensions(w-20,25)
-			if opt == '-' then
-				c:SetNormalTexture('AlphaGearX2/row.dds')
-			else
-				c:SetNormalFontColor(1,1,1,1)
-				c:SetMouseOverFontColor(1,1,0,1)
-				c:SetFont('ZoFontGame')
-				c:SetHorizontalAlignment(0)
-				c:SetVerticalAlignment(1)
-				c:SetClickSound('Click')
-				c:SetHandler('OnClick',function(self) AG4.DrawOptions(x) end)
-				c:SetText(ZOSF(tex,val[AG4.account.option[set]])..opt)
-			end
+function AG4.TooltipSet(c,nr,visible)
+	if not c or not nr then return end
+	if visible then
+		local set,val = AG4.setdata[nr].Set
+		if set.Set.gear ~= 0 then
+			val = Zero(set.icon[1]) or AG4.GetSetIcon(set.gear,1)
+		else val = 'AlphaGearX2/none.dds' end
+		AG_SetTipSkill1Icon:SetTexture(val)
+		if set.Set.gear ~= 0 then
+			val = Zero(set.icon[2]) or AG4.GetSetIcon(set.gear,2)
+		else val = 'AlphaGearX2/none.dds' end
+		AG_SetTipSkill2Icon:SetTexture(val)
+		AG_SetTipName:SetText(Zero(set.text[1]) or 'Set '..nr)
+		AG_SetTipBar1Name:SetText(Zero(set.text[2]) or 'Action-Bar 1')
+		AG_SetTipBar2Name:SetText(Zero(set.text[3]) or 'Action-Bar 2')
+		for x = 1,6 do
+			if AG4.setdata[set.Set.skill[1]].Skill[x][1] ~= 0 then
+				_,val = GetSkillAbilityInfo(unpack(AG4.setdata[set.Set.skill[1]].Skill[x]))
+			else val = 'AlphaGearX2/grey1.dds' end
 		end
-		AG_PanelOptionPanel:SetDimensions(w,h)
-	else
-		AG4.account.option[set] = not AG4.account.option[set]
-		WM:GetControlByName('AG_Option_'..set):SetText(ZOSF(tex,val[AG4.account.option[set]])..L.Options[set])
-		AG4.SetOptions()
+		AG_SetTipBar1Skills:SetText('|t40:40:'..val..'|t ')
+		for x = 1,6 do
+			if AG4.setdata[set.Set.skill[2]].Skill[x][1] ~= 0 then
+				_,val = GetSkillAbilityInfo(unpack(AG4.setdata[set.Set.skill[2]].Skill[x]))
+			else val = 'AlphaGearX2/grey1.dds' end
+		end
+		AG_SetTipBar2Skills:SetText('|t40:40:'..val..'|t ')
+		AG_SetTip:SetAnchor(6,c,3,0,-2)
+		AG_SetTip:SetHidden(false)
+	else AG_SetTip:SetHidden(true) end
+end
+function AG4.DrawSetButtonsUI()
+	local xpos,ypos,c = 10,10
+	for x = 1,MAXSLOT do
+		c = WM:CreateControl('AG_UI_SetButton_'..x, AG_SetButtonFrame, CT_BUTTON)
+		c:SetAnchor(3,AG_SetButtonFrame,3,xpos,ypos)
+		c:SetDimensions(20,20)
+		c:SetHorizontalAlignment(1)
+		c:SetVerticalAlignment(1)
+		c:SetClickSound('Click')
+		c:SetFont('AGFont')
+		c:SetColor(1,1,1,1)
+		c:SetText(x)
+		c:SetNormalTexture('AlphaGearX2/grey.dds')
+		c:SetMouseOverTexture('AlphaGearX2/light.dds')
+		c:SetHandler('OnMouseEnter',function(self) AG4.TooltipSet(self,x,true) end)
+		c:SetHandler('OnMouseExit',function(self) AG4.TooltipSet(self,x,false) end)
+		c:SetHandler('OnClicked',function(self) AG4.LoadSet(x) end)
+		if x == MAXLOTS/2 then ypos = ypos + 25; xpos = 10
+		else xpos = xpos + 5 end
 	end
 end
--- 19.02.16
-function AG4.DrawSet(nr)
-	s:SetHandler('OnMouseDown',function(self,button)
-		if button == 2 then
-			SELECT = nr
-			local anchor = {AG_PanelEditPanel:GetAnchor()}
-			if anchor[3] == self then
-				self:SetHeight(76)
-				AG_PanelEditPanel:SetHidden(true)
-			else			
-				if anchor[3] then anchor[3]:SetHeight(76) end
-				self:SetHeight(408)
-				AG_PanelEditPanel:ClearAnchors()
-				AG_PanelEditPanel:SetAnchor(6,self,6,2,-2)
-				AG_PanelEditPanel:SetHidden(false)
-			end
-		elseif button == 1 then AG4.LoadSet(nr) end
-	end)
-end
-
 function AG4.UpdateEditPanel(nr)
+	local val,set,gear,skill,c = nil, AG4.setdata[nr].Set, AG4.setdata[nr].Gear, AG4.setdata[nr].Skill 
+	SELECT = nr
 	for x = 1,2 do
 		for slot = 1,6 do
-			local c,set = WM:GetControlByName('AG_Edit_Skill_'..x..'_'..slot), AG4.setdata[nr].Set.skill[x]
-			if set ~= 0 then
-				local _,icon = GetSkillAbilityInfo(AG4.setdata[set].Skill[slot][1],AG4.setdata[set].Skill[slot][2],AG4.setdata[set].Skill[slot][3])
-				c:SetNormalTexture(icon or nil)
-			else
-				c:SetNormalTexture()
-			end
+			if set.skill[x] > 0 then _,val = GetSkillAbilityInfo(unpack(skill[slot])) else val = nil end
+			WM:GetControlByName('AG_Edit_Skill_'..x..'_'..slot):SetNormalTexture(val)
 		end
 	end
 	for slot = 1,14 do
-		local c,set,color = WM:GetControlByName('AG_Edit_Gear_'..slot), AG4.setdata[nr].Set.gear
-		if set ~= 0 then
-			c:SetNormalTexture(GetItemLinkInfo(AG4.setdata[set].Gear[slot].link) or nil)
-			color = QUALITY[GetItemLinkQuality(AG4.setdata[set].Gear[slot].link)] or {0,0,0}
-			c:GetNamedChild('Bg'):SetCenterColor(color[1],color[2],color[3],0.75)
+		c = WM:GetControlByName('AG_Edit_Gear_1_'..slot)
+		if set.gear > 0 and gear[slot].id ~= 0 then 
+			c:SetNormalTexture(GetItemLinkInfo(gear[slot].link))
+			c:GetNamedChild('Bg'):SetCenterColor(unpack(QUALITY[GetItemLinkQuality(gear[slot].link)]),0.75)
 		else
 			c:SetNormalTexture('esoui/art/characterwindow/gearslot_'..SLOTS[slot][2]..'.dds')
 			c:GetNamedChild('Bg'):SetCenterColor(0,0,0,0.2)
 		end
 	end
+	if set.gear > 0
+		if AG4.setdata[set.gear].Gear[1].id ~= 0 then
+			val = Zero(set.icon[1]) or AG4.GetSetIcon(set.gear,1)
+		end
+	else val = 'x.dds' end
+	AG_PanelSetPanelScrollChildEditPanelBar1IconTex:SetTexture(val)
+	if set.gear > 0
+		if AG4.setdata[set.gear].Gear[3].id ~= 0 then
+			val = Zero(set.icon[2]) or AG4.GetSetIcon(set.gear,2)
+		end
+	else val = 'x.dds' end
+	AG_PanelSetPanelScrollChildEditPanelBar2IconTex:SetTexture(val)
+
+	if AG4.setdata[nr].Set.text[1] == 0 then val = '|cFFAA33Set '..nr..'|r' else val = '|cFFAA33'..val..'|r' end
+	c = AG_PanelSetPanelScrollChildEditPanelGearConnector
+	c.SetText(Zero(set.gear) or '')
+	c.data = { header = val, info = L.SetConnector[1] }
+	c = AG_PanelSetPanelScrollChildEditPanelBar1Connector
+	c.SetText(Zero(set.skill[1]) or '')
+	c.data = { header = val, info = L.SetConnector[2] }
+	c = AG_PanelSetPanelScrollChildEditPanelBar2Connector
+	c.SetText(Zero(set.skill[2]) or '')
+	c.data = { header = val, info = L.SetConnector[3] }
+	c = AG_PanelSetPanelScrollChildEditPanelGearLockTex
+	if set.lock == 0 then c:SetTexture('AlphaGearX2/unlocked.dds') else c:SetTexture('AlphaGearX2/locked.dds') end
+	AG_PanelSetPanelScrollChildEditPanelBar1NameEdit:SetText(Zero(set.text[2]) or 'Action-Bar 1')
+	AG_PanelSetPanelScrollChildEditPanelBar2NameEdit:SetText(Zero(set.text[3]) or 'Action-Bar 2')
+	WM:GetControlByName('AG_SetSelector_'..nr..'Edit'):SetText(Zero(set.text[1]) or 'Set '..nr)
 end
+
+local QUALITY = {[0]={0.65,0.65,0.65},[1]={1,1,1},[2]={0.17,0.77,0.05},[3]={0.22,0.57,1},[4]={0.62,0.18,0.96},[5]={0.80,0.66,0.10}}
+
+Bezir: .25,.5,.4,1.4
+
+ToDo:
+
+UI Set Buttons + Positioning and Tooltip
+Set Gear Connector clearout
+Item + Skill Tooltip Hint
+Dragging issue
+Edit Panel Update on skill drag
+Swap Message on Set Load
+Icons on empty sets
