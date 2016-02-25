@@ -5,7 +5,7 @@ AG4.account = {}
 AG4.setdata = {}
 local L, ZOSF, FUNC1, FUNC2 = AG4[GetCVar('language.2')] or AG4.en, zo_strformat, nil, nil
 local MAXSLOT, MENU, SELECT, SELECTBAR, DRAGINFO, TTANI, SWAP = 16, { nr = nil, type = nil, copy = nil }, false, false, {}, false, false
-local EM, WM, SM, ICON, MESSAGE = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, {}
+local EM, WM, SM, ICON, MESSAGE, MARK = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, {}, {}
 local OPT, GEARQUEUE, SLOTS, DUPSLOTS = {}, {}, {
 {EQUIP_SLOT_MAIN_HAND,'mainhand','MainHand'},
 {EQUIP_SLOT_OFF_HAND,'offhand','OffHand'},
@@ -52,28 +52,13 @@ function AG4.DrawMenu(c,line)
 	AG_PanelMenu:SetHeight(h + 20)
 end
 function AG4.DrawInventory()
-	local tex = 'AlphaGearX2/spot.dds'
 	for _,c in pairs(SLOTS) do
 		local p = WM:GetControlByName('ZO_CharacterEquipmentSlots'..c[3])
 		local s = WM:CreateControl('AG_InvBg'..c[1], p, CT_TEXTURE)
 		s:SetHidden(true)
 		s:SetDrawLevel(1)
 		s:SetTexture('AlphaGearX2/hole.dds')
-		s:SetColor(1,1,1,1)
 		s:SetAnchorFill()
-		s = p:GetNamedChild('DropCallout')
-		s:ClearAnchors()
-		s:SetAnchor(1,p,1,0,2)
-		s:SetDimensions(52,52)
-		s:SetTexture(tex)
-		s:SetDrawLayer(0)
-		s = p:GetNamedChild('Highlight')
-		if s then
-			s:ClearAnchors()
-			s:SetAnchor(1,p,1,0,2)
-			s:SetDimensions(52,52)
-			s:SetTexture(tex)
-		end
 		s = WM:CreateControl('AG_InvBg'..c[1]..'Condition', p, CT_LABEL)
 		s:SetFont('ZoFontGameSmall')
 		s:SetAnchor(TOPRIGHT,p,TOPRIGHT,7,-8)
@@ -242,7 +227,7 @@ function AG4.DrawSet(nr)
 	l:SetHorizontalAlignment(0)
 	l:SetVerticalAlignment(1)
 	l:SetFont('AGFont')
-	l:SetColor(1,1,1,0.8)
+	l:SetColor(1,1,1,1)
 	p = WM:CreateControlFromVirtual('AG_SetSelector_'..nr..'Edit', s, 'ZO_DefaultEditForBackdrop')
 	p:ClearAnchors()
 	p:SetAnchor(128,l,128,0,4)
@@ -476,10 +461,9 @@ function AG4.LoadItem(nr,slot,set)
 end
 function AG4.LoadSkill(nr,slot)
     if not nr or not slot or AG4.setdata[nr].Skill[slot][1] == 0 then return end
-	local slotted = GetAssignedSlotFromSkillAbility(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3])
-	if not slotted or slotted ~= slot + 2 then
-		SlotSkillAbilityInSlot(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3], slot + 2)
-	end
+	local s1,s2,s3 = unpack(AG4.setdata[nr].Skill[slot])
+	local slotted = GetAssignedSlotFromSkillAbility(s1,s2,s3)
+	if not slotted or slotted ~= slot + 2 then SlotSkillAbilityInSlot(s1,s2,s3, slot + 2) end
 end
 function AG4.LoadBar(nr)
 	if not nr then return end
@@ -492,13 +476,13 @@ end
 function AG4.LoadSet(nr)
 	if not nr then return end
 	AG4.account.lastset = nr
-	AG4.SwapMessage()
+	-- AG4.SwapMessage()
 	local pair = GetActiveWeaponPairInfo()
 	if AG4.setdata[nr].Set.gear > 0 then AG4.LoadGear(AG4.setdata[nr].Set.gear,nr) end
 	if AG4.setdata[nr].Set.skill[pair] > 0 then AG4.LoadBar(AG4.setdata[nr].Set.skill[pair]) end
 	SWAP = true
 	-- AG4.UpdateCharge(nil,BAG_WORN)
-	-- zo_callLater(AG4.SwapMessage,100)
+	zo_callLater(AG4.SwapMessage,500)
 end
 
 function AG4.Undress(mode)
@@ -576,9 +560,22 @@ end
 function AG4.UpdateCondition(_,bag,slot)
 	if bag ~= BAG_WORN or slot == EQUIP_SLOT_COSTUME then return end
 	local t, l = WM:GetControlByName('AG_InvBg'..slot), WM:GetControlByName('AG_InvBg'..slot..'Condition')
-	local p = t:GetParent()
+	local p, s = t:GetParent()
 	p:SetMouseOverTexture(not ZO_Character_IsReadOnly() and 'AlphaGearX2/mo.dds' or nil)
 	p:SetPressedMouseOverTexture(not ZO_Character_IsReadOnly() and 'AlphaGearX2/mo.dds' or nil)
+	s = p:GetNamedChild('DropCallout')
+	s:ClearAnchors()
+	s:SetAnchor(1,p,1,0,2)
+	s:SetDimensions(52,52)
+	s:SetTexture('AlphaGearX2/spot.dds')
+	s:SetDrawLayer(0)
+	s = p:GetNamedChild('Highlight')
+	if s then
+		s:ClearAnchors()
+		s:SetAnchor(1,p,1,0,2)
+		s:SetDimensions(52,52)
+		s:SetTexture('AlphaGearX2/spot.dds')
+	end
 	if GetItemInstanceId(BAG_WORN,slot) then
 		if OPT[10] then
 			t:SetHidden(false)
@@ -703,6 +700,47 @@ function AG4.UpdateEditPanel(nr)
 	AG_PanelSetPanelScrollChildEditPanelBar1NameEdit:SetText(Zero(set.text[2]) or 'Action-Bar 1')
 	AG_PanelSetPanelScrollChildEditPanelBar2NameEdit:SetText(Zero(set.text[3]) or 'Action-Bar 2')
 	WM:GetControlByName('AG_SetSelector_'..nr..'Edit'):SetText(Zero(set.text[1]) or 'Set '..nr)
+end
+function AG4.UpdateInventory()
+	local function SetItemMark(c)
+		if not c then return end
+		local function GetMark(c)
+			local name = c:GetName()
+			if not MARK[name] then MARK[name] = WM:CreateControl(name..'AG_ItemMark',c,CT_TEXTURE) end
+			MARK[name]:SetDrawLayer(3)
+			MARK[name]:SetDimensions(16,16)
+			MARK[name]:SetHidden(true)
+			MARK[name]:ClearAnchors()
+			MARK[name]:SetAnchor(6,c:GetNamedChild('Bg'),6,2,2)
+			MARK[name]:SetTexture('AlphaGearX2/mark.dds')
+			return MARK[name]
+		end
+		local slot, mark, uid = c.dataEntry.data or nil, GetMark(c)
+		uid = Id64ToString(GetItemUniqueId(slot.bagId,slot.slotIndex))
+		if not slot or not uid then return end
+		for nr = 1,MAXSLOT do
+			if AG4.setdata[nr].Set.gear > 0 then
+				for slot = 1,14 do
+					if AG4.setdata[nr].Set.gear[slot].id == uid then
+						mark:SetHidden(false)
+						return
+					end
+				end
+			end
+		end
+	end
+	local inv = {
+		ZO_PlayerInventoryBackpack,ZO_PlayerBankBackpack,
+		ZO_SmithingTopLevelDeconstructionPanelInventoryBackpack,
+		ZO_SmithingTopLevelImprovementPanelInventoryBackpack,
+	}
+	for x = 1,#inv do
+		local puffer = inv[x].dataTypes[1].setupCallback
+		inv[x].dataTypes[1].setupCallback = function(c,slot)
+			puffer(c,slot)
+			if OPT[8] then SetItemMark(c) end
+		end
+	end
 end
 
 function AG4.SetCallout(panel,mode)
@@ -861,7 +899,7 @@ function AG4.ShowButton(c)
 	end
 	if SELECT and not AG_PanelSetPanelScrollChildEditPanel:IsHidden() then
 		if (nr == AG4.setdata[SELECT].Set.gear or nr == AG4.setdata[SELECT].Set.skill[1] or nr == AG4.setdata[SELECT].Set.skill[2])
-		then AG4.UpdateEditPanel(nr) end
+		then AG4.UpdateEditPanel(SELECT) end
 	end
 end
 function AG4.ShowMain()
@@ -943,7 +981,7 @@ end
 function AG4.Tooltip(c,visible,edit)
 	local function FadeIn(control)
 		TTANI = ANIMATION_MANAGER:CreateTimeline()
-		local fadeIn = TTANI:InsertAnimation(ANIMATION_ALPHA,control,500)
+		local fadeIn = TTANI:InsertAnimation(ANIMATION_ALPHA,control,400)
 		fadeIn:SetAlphaValues(0,1)
 		fadeIn:SetDuration(150)
 		TTANI:PlayFromStart()
@@ -967,7 +1005,7 @@ function AG4.Tooltip(c,visible,edit)
 				if AG4.setdata[nr].Skill[slot][1] == 0 then return end
 				c.text = SkillTooltip
 				InitializeTooltip(c.text,AG_Panel,3,0,0,9)
-				c.text:SetSkillAbility(AG4.setdata[nr].Skill[slot][1], AG4.setdata[nr].Skill[slot][2], AG4.setdata[nr].Skill[slot][3])
+				c.text:SetSkillAbility(unpack(AG4.setdata[nr].Skill[slot]))
 			else return end
 		elseif c.data and c.data.tip then
 			c.text = InformationTooltip
@@ -1021,19 +1059,18 @@ function AG4.TooltipSet(nr,visible)
 	else AG_SetTip:SetHidden(true) end
 end
 function AG4.TooltipShow(c,id)
-	if OPT[8] and id then
-		local sets = 'test'
-		-- for x,set in pairs(AG4.setdata) do
-			-- if set.Set.gear ~= 0 then
-				-- for _,slot in pairs(set.gear[set.Set.gear]) do
-					-- if slot.id == id then
-						-- sets = sets..x..' '
-						-- break
-					-- end
-				-- end
-			-- end
-		-- end
-		if sets ~= '' then c:AddLine(ZOSF(L.SetPart,sets),"ZoFontGameSmall") end
+	if OPT[8] and id and c then
+		local sets = ''
+		for nr = 1,MAXSLOT do
+			if AG4.setdata[nr].Set.gear > 0 then
+				for slot = 1,14 do
+					if AG4.setdata[nr].Set.gear[slot].id == id then
+						sets = sets..nr..' '
+					end
+				end
+			end
+		end
+		if sets ~= '' then c:AddLine(ZOSF(L.SetPart,sets),'ZoFontGameSmall') end
 	end
 end
 function AG4.TooltipHandle()
@@ -1120,7 +1157,8 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 	AG4.DrawInventory()
 	AG4.DrawOptions()
 	AG4.ResetPosition()
-	-- AG4.TooltipHandle()
+	AG4.UpdateInventory()
+	AG4.TooltipHandle()
 	AG4.SetOptions()
 	AG4.ScrollText()
 	
@@ -1142,3 +1180,10 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 	SELECT = AG4.account.lastset
 	AG4.init = true
 end)
+
+--[[
+ToDo:
+Item + Skill Tooltip Hint
+# Edit Panel Update on skill drag
+Swap Message on Set Load
+]]
