@@ -1,135 +1,88 @@
-local function Zero(val) if val == 0 then return nil else return val end end
-
-function AG4.GetSetIcon(nr,bar)
-	local endicon,gear,icon = nil, AG4.setdata[nr].Gear, {
-		[WEAPONTYPE_NONE] = 'none',
-		[WEAPONTYPE_DAGGER] = 'onehand',
-		[WEAPONTYPE_HAMMER] = 'onehand',
-		[WEAPONTYPE_AXE] = 'onehand',
-		[WEAPONTYPE_SWORD] = 'onehand',
-		[WEAPONTYPE_TWO_HANDED_HAMMER] = 'twohand',
-		[WEAPONTYPE_TWO_HANDED_AXE] = 'twohand',
-		[WEAPONTYPE_TWO_HANDED_SWORD] = 'twohand',
-		[WEAPONTYPE_FIRE_STAFF] = 'fire',
-		[WEAPONTYPE_FROST_STAFF] = 'frost',
-		[WEAPONTYPE_LIGHTNING_STAFF] = 'shock',
-		[WEAPONTYPE_HEALING_STAFF] = 'heal',
-		[WEAPONTYPE_BOW] = 'bow',
-		[WEAPONTYPE_SHIELD] = 'shield'
+local FLASK = {
+	reagent = {},
+	noBad = false,
+	solvent = {883,1187,4570,23265,23266,23267,23268,64500,64501},
+	reagentTrait = {
+		{30165,2,14,12,23},
+		{30158,9,3,18,13},
+		{30155,6,8,1,22},
+		{30152,18,2,9,4},
+		{30162,7,5,16,11},
+		{30148,4,10,1,23},
+		{30149,16,2,7,6},
+		{30161,3,9,2,24},
+		{30160,17,1,10,3},
+		{30154,10,4,17,12},
+		{30157,5,7,2,21},
+		{30151,2,4,6,20},
+		{30164,1,3,5,19},
+		{30159,11,22,24,19},
+		{30163,15,1,8,5},
+		{30153,13,21,23,19},
+		{30156,8,6,15,12},
+		{30166,1,13,11,20}
+	},
+	solventSelection = 1,
+	traitSelection = {1},
+	traitIcon = {
+		'restorehealth','ravagehealth',
+		'restoremagicka','ravagemagicka',
+		'restorestamina','ravagestamina',
+		'increaseweaponpower','lowerweaponpower',
+		'increasespellpower','lowerspellpower',
+		'weaponcrit','lowerweaponcrit',
+		'spellcrit','lowerspellcrit',
+		'increasearmor','lowerarmor',
+		'increasespellresist','lowerspellresist',
+		'unstoppable','stun',
+		'speed','reducespeed',
+		'invisible','detection',
 	}
-	if bar == 1 then
-		if gear[2].link ~= 0 then endicon = icon[GetItemLinkWeaponType(gear[2].link)]
-		else endicon = icon[GetItemLinkWeaponType(gear[1].link)] end
-	else
-		if gear[4].link ~= 0 then endicon = icon[GetItemLinkWeaponType(gear[4].link)]
-		else endicon = icon[GetItemLinkWeaponType(gear[3].link)] end
-	end
-	if endicon then return 'AlphaGearX2/'..endicon..'.dds' else return nil end
+}
+
+function IsBad(trait)
+	if not trait return false end
+	if trait%2 == 0 and trait < 24 then return true end
+	return false
+end
+function GetAntiTrait(trait)
+	if not trait return false end
+	if trait%2 == 0 then return trait - 1 end
+	return trait + 1
+end
+function CheckTraits(reagent,trait)
+    local found = {0,0,0}
+	for a = 2,5 do
+	    for _,x in pairs(reagent) do
+	        for nr,y in pairs(trait) do
+	            if FLASK.reagentTrait[x][a] == y then found[nr] = found[nr] + 1 end
+   	            if GetAntiTrait(FLASK.reagentTrait[x][a]) == y then found[nr] = found[nr] - 1 end
+            end
+	    end
+    end
+    return found
 end
 
-function AG4.TooltipSet(c,nr,visible)
-	if not c or not nr then return end
-	if visible then
-		local set,val = AG4.setdata[nr].Set
-		for z = 1,2 do
-			for x = 1,6 do
-				if AG4.setdata[set.Set.skill[z]].Skill[x][1] ~= 0 then
-					_,val = GetSkillAbilityInfo(unpack(AG4.setdata[set.Set.skill[z]].Skill[x]))
-				else val = 'AlphaGearX2/grey1.dds' end
-			end
-			WM:GetControlByName('AG_SetTipBar'..z..'Skills'):SetText('|t40:40:'..val..'|t ')
-			if set.Set.gear ~= 0 then
-				val = Zero(set.icon[z]) or AG4.GetSetIcon(set.gear,z)
-			else val = 'AlphaGearX2/none.dds' end
-			WN:GetControlByName('AG_SetTipSkill'..z..'Icon'):SetTexture(val)
-		end
-		AG_SetTipName:SetText(Zero(set.text[1]) or 'Set '..nr)
-		AG_SetTipBar1Name:SetText(Zero(set.text[2]) or 'Action-Bar 1')
-		AG_SetTipBar2Name:SetText(Zero(set.text[3]) or 'Action-Bar 2')
-		AG_SetTip:SetAnchor(6,c,3,0,-2)
-		AG_SetTip:SetHidden(false)
-	else AG_SetTip:SetHidden(true) end
-end
-function AG4.DrawSetButtonsUI()
-	local xpos,ypos,c = 10,10
-	for x = 1,MAXSLOT do
-		c = WM:CreateControl('AG_UI_SetButton_'..x, AG_SetButtonFrame, CT_BUTTON)
-		c:SetAnchor(3,AG_SetButtonFrame,3,xpos,ypos)
-		c:SetDimensions(20,20)
-		c:SetHorizontalAlignment(1)
-		c:SetVerticalAlignment(1)
-		c:SetClickSound('Click')
-		c:SetFont('AGFont')
-		c:SetColor(1,1,1,1)
-		c:SetText(x)
-		c:SetNormalTexture('AlphaGearX2/grey.dds')
-		c:SetMouseOverTexture('AlphaGearX2/light.dds')
-		c:SetHandler('OnMouseEnter',function(self) AG4.TooltipSet(self,x,true) end)
-		c:SetHandler('OnMouseExit',function(self) AG4.TooltipSet(self,x,false) end)
-		c:SetHandler('OnClicked',function(self) AG4.LoadSet(x) end)
-		if x == MAXLOTS/2 then ypos = ypos + 25; xpos = 10
-		else xpos = xpos + 5 end
-	end
-end
-function AG4.UpdateEditPanel(nr)
-	local val,set,gear,skill,c = nil, AG4.setdata[nr].Set, AG4.setdata[nr].Gear, AG4.setdata[nr].Skill 
-	SELECT = nr
-	for x = 1,2 do
-		for slot = 1,6 do
-			if set.skill[x] > 0 then _,val = GetSkillAbilityInfo(unpack(skill[slot])) else val = nil end
-			WM:GetControlByName('AG_Edit_Skill_'..x..'_'..slot):SetNormalTexture(val)
-		end
-	end
-	for slot = 1,14 do
-		c = WM:GetControlByName('AG_Edit_Gear_1_'..slot)
-		if set.gear > 0 and gear[slot].id ~= 0 then 
-			c:SetNormalTexture(GetItemLinkInfo(gear[slot].link))
-			c:GetNamedChild('Bg'):SetCenterColor(unpack(QUALITY[GetItemLinkQuality(gear[slot].link)]),0.75)
-		else
-			c:SetNormalTexture('esoui/art/characterwindow/gearslot_'..SLOTS[slot][2]..'.dds')
-			c:GetNamedChild('Bg'):SetCenterColor(0,0,0,0.2)
-		end
-	end
-	if set.gear > 0
-		if AG4.setdata[set.gear].Gear[1].id ~= 0 then
-			val = Zero(set.icon[1]) or AG4.GetSetIcon(set.gear,1)
-		end
-	else val = 'x.dds' end
-	AG_PanelSetPanelScrollChildEditPanelBar1IconTex:SetTexture(val)
-	if set.gear > 0
-		if AG4.setdata[set.gear].Gear[3].id ~= 0 then
-			val = Zero(set.icon[2]) or AG4.GetSetIcon(set.gear,2)
-		end
-	else val = 'x.dds' end
-	AG_PanelSetPanelScrollChildEditPanelBar2IconTex:SetTexture(val)
-
-	if AG4.setdata[nr].Set.text[1] == 0 then val = '|cFFAA33Set '..nr..'|r' else val = '|cFFAA33'..val..'|r' end
-	c = AG_PanelSetPanelScrollChildEditPanelGearConnector
-	c.SetText(Zero(set.gear) or '')
-	c.data = { header = val, info = L.SetConnector[1] }
-	c = AG_PanelSetPanelScrollChildEditPanelBar1Connector
-	c.SetText(Zero(set.skill[1]) or '')
-	c.data = { header = val, info = L.SetConnector[2] }
-	c = AG_PanelSetPanelScrollChildEditPanelBar2Connector
-	c.SetText(Zero(set.skill[2]) or '')
-	c.data = { header = val, info = L.SetConnector[3] }
-	c = AG_PanelSetPanelScrollChildEditPanelGearLockTex
-	if set.lock == 0 then c:SetTexture('AlphaGearX2/unlocked.dds') else c:SetTexture('AlphaGearX2/locked.dds') end
-	AG_PanelSetPanelScrollChildEditPanelBar1NameEdit:SetText(Zero(set.text[2]) or 'Action-Bar 1')
-	AG_PanelSetPanelScrollChildEditPanelBar2NameEdit:SetText(Zero(set.text[3]) or 'Action-Bar 2')
-	WM:GetControlByName('AG_SetSelector_'..nr..'Edit'):SetText(Zero(set.text[1]) or 'Set '..nr)
+function FindReagent(traits)
+	if not traits[1] then return end
+	local result, found = {}, {}
+    for x = 1,#FLASK.reagentTrait do
+        for y = x+1,#FLASK.reagentTrait do
+            for z = y+1,#FLASK.reagentTrait do
+	            found = CheckTraits({x,y,z},{traits[1],traits[2],traits[3]})
+	            if traits[1] and found[1] > 1 then
+	                if traits[2] and found[2] > 1 then
+    	                if traits[3] then
+    	                    if found[3] > 1 then table.insert(result,{x,y,z}) end
+    	                else
+    	                    table.insert(result,{x,y,0})
+    	                end
+    	            end    
+    	        end
+            end
+        end
+    end
+    for _,x in pairs(result) do print(x[1]..','..x[2]..','..x[3]) end
 end
 
-local QUALITY = {[0]={0.65,0.65,0.65},[1]={1,1,1},[2]={0.17,0.77,0.05},[3]={0.22,0.57,1},[4]={0.62,0.18,0.96},[5]={0.80,0.66,0.10}}
-
-Bezir: .25,.5,.4,1.4
-
-ToDo:
-
-UI Set Buttons + Positioning and Tooltip
-Set Gear Connector clearout
-Item + Skill Tooltip Hint
-Dragging issue
-Edit Panel Update on skill drag
-Swap Message on Set Load
-Icons on empty sets
+FindReagent({1,3,5})
