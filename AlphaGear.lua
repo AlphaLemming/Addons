@@ -1,12 +1,12 @@
 AG.name = 'AlphaGear'
-AG.version = '4.03'
+AG.version = '4.05'
 AG.init = false
 AG.account = {}
 AG.setdata = {}
-local L, ZOSF, FUNC1, FUNC2 = AG[GetCVar('language.2')] or AG.en, zo_strformat, nil, nil
+local L, ZOSF = AG[GetCVar('language.2')] or AG.en, zo_strformat
 local MAXSLOT, MENU, SELECT, SELECTBAR, DRAGINFO, TTANI, SWAP = 16, { nr = nil, type = nil, copy = nil }, false, false, {}, false, false
-local EM, WM, SM, ICON, MESSAGE, MARK = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, {}, nil, {}
-local OPT, GEARQUEUE, SLOTS, DUPSLOTS = {}, {}, {
+local EM, WM, SM, ICON, MARK = EVENT_MANAGER, WINDOW_MANAGER, SCENE_MANAGER, {}, {}
+local IDLE, OPT, GEARQUEUE, SLOTS, DUPSLOTS = 0, {}, {}, {
 {EQUIP_SLOT_MAIN_HAND,'mainhand','MainHand'},
 {EQUIP_SLOT_OFF_HAND,'offhand','OffHand'},
 {EQUIP_SLOT_BACKUP_MAIN,'mainhand','BackupMain'},
@@ -89,7 +89,7 @@ function AG.DrawButton(p,name,btn,nr,x,xpos,ypos,show)
 		c:EnableMouseButton(2,true)
 		c:SetHandler('OnReceiveDrag',function(self) AG.OnDragReceive(self) end)
 		if btn == 'Gear' then c:SetHandler('OnMouseDown',function(self,button) if button == 2 then AG.setdata[nr].Gear[x] = { id = 0, link = 0 }; AG.ShowButton(self) elseif button == 1 then AG.LoadItem(nr,x) end end) end
-		if btn == 'Skill' then c:SetHandler('OnMouseDown',function(self,button) if button == 2 then AG.setdata[nr].Skill[x] = {0,0,0}; AG.ShowButton(self) elseif button == 1 then AG.LoadSkill(nr,x) end end) end
+		if btn == 'Skill' then c:SetHandler('OnMouseDown',function(self,button) if button == 2 then AG.setdata[nr].Skill[x] = 0; AG.ShowButton(self) elseif button == 1 then AG.LoadSkill(nr,x) end end) end
 		AG.ShowButton(c)
 	end
 end
@@ -127,7 +127,7 @@ function AG.DrawButtonLine(mode,nr)
 end
 function AG.DrawOptions(set)
 	local val, tex = {[true]='checked',[false]='unchecked'}, '|t16:16:esoui/art/buttons/checkbox_<<1>>.dds|t |t2:2:x.dds|t '
-	local count,rows,row,opt = 1,{6,8,11,13},1,1
+	local rows,row,opt = {6,8,11,13},1,1
 	if not set then
 		local w,c = L.OptionWidth
 		for count = 1,#L.Options + #rows do
@@ -346,14 +346,8 @@ function AG.GetSetIcon(nr,bar)
 	if endicon then return 'AlphaGear/'..endicon..'.dds' else return nil end
 end
 function AG.GetSkillFromBar(nr)
-	-- local id,pid,a,b,c
 	for x = 1,6 do
 		AG.setdata[nr].Skill[x] = GetSlotBoundId(x+2) or 0
-		-- id = GetSlotBoundId(x+2)
-		-- if id then _,pid = GetAbilityProgressionXPInfoFromAbilityId(id)
-			-- if pid then a,b,c = GetSkillAbilityIndicesFromProgressionIndex(pid) or 0,0,0 end
-			-- AG.setdata[nr].Skill[x] = {a,b,c}
-		-- else AG.setdata[nr].Skill[x] = {0,0,0} end
 		AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..nr..'_'..x))
 	end
 end
@@ -365,6 +359,16 @@ function AG.GetAbility(id)
 end
 function AG.GetSlotted(id)
 	for x = 3,8 do if GetSlotBoundId(x) == id then return x end end
+	return false
+end
+function AG.GetSkill(id)
+	for a = 1,GetNumSkillTypes() do
+		for b = 1,GetNumSkillLines(a) do
+			for c = 1,GetNumSkillAbilities(a,b) do
+				if GetSkillAbilityId(a,b,c,false) == id then return a,b,c end
+			end
+		end
+	end
 	return false
 end
 
@@ -391,9 +395,7 @@ function AG.OnDragReceive(c)
 	end
 	local function CheckSkills(nr)
 		for x = 1,5 do
-			-- if AG.setdata[nr].Skill[x][1] == DRAGINFO.skill and AG.setdata[nr].Skill[x][2] == DRAGINFO.line and AG.setdata[nr].Skill[x][3] == DRAGINFO.id then
 			if AG.setdata[nr].Skill[x] == DRAGINFO.id then
-				-- AG.setdata[nr].Skill[x] = {0,0,0}
 				AG.setdata[nr].Skill[x] = 0
 				AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..nr..'_'..x))
 				return
@@ -412,11 +414,9 @@ function AG.OnDragReceive(c)
 	end
 	local function DragSkill(btn)
 		local _, nr, slot = AG.GetButton(btn)
-		-- if DRAGINFO.skill then
 		if DRAGINFO.id then
 			if (not DRAGINFO.ultimate and slot < 6) or (DRAGINFO.ultimate and slot == 6) then
 				if slot < 6 then CheckSkills(nr) end
-				-- AG.setdata[nr].Skill[slot] = { DRAGINFO.skill, DRAGINFO.line, DRAGINFO.id }
 				AG.setdata[nr].Skill[slot] = DRAGINFO.id
 				AG.ShowButton(btn)
 				ClearCursor()
@@ -432,10 +432,7 @@ function AG.OnSkillDragStart(c)
     if GetCursorContentType() == MOUSE_CONTENT_EMPTY and not AG_Panel:IsHidden() then
 		local _,_,_,_,ultimate,active = GetSkillAbilityInfo(c.skillType, c.lineIndex, c.index)
 		if active then
-			-- DRAGINFO.skill		= c.skillType
-			-- DRAGINFO.line		= c.lineIndex
-			-- DRAGINFO.id			= c.index
-			DRAGINFO.id			= c.actionId
+			DRAGINFO.id			= GetSkillAbilityId(c.skillType,c.lineIndex,c.index,false)
 			DRAGINFO.ultimate	= ultimate
 			DRAGINFO.source 	= c
 			DRAGINFO.slot 		= {1,2,3,4,5}
@@ -495,13 +492,9 @@ function AG.LoadItem(nr,slot,set)
 end
 function AG.LoadSkill(nr,slot)
     if not nr or not slot or AG.setdata[nr].Skill[slot] == 0 then return end
-    -- if not nr or not slot or AG.setdata[nr].Skill[slot][1] == 0 then return end
-	-- local s1,s2,s3 = unpack(AG.setdata[nr].Skill[slot])
-	-- local slotted = GetAssignedSlotFromSkillAbility(s1,s2,s3)
-	-- if not slotted or slotted ~= slot + 2 then SlotSkillAbilityInSlot(s1,s2,s3, slot + 2) end
 	local id = AG.GetAbility(AG.setdata[nr].Skill[slot])
 	local slotted = AG.GetSlotted(id)
-	if not slotted or slotted ~= slot + 2 then CallSecureProtected('SelectSlotAbility',id,slot) end
+	if not slotted or slotted ~= slot + 2 then CallSecureProtected('SelectSlotAbility',id,slot+2) end
 end
 function AG.LoadBar(nr)
 	if not nr then return end
@@ -528,14 +521,17 @@ function AG.Undress(mode)
 end
 function AG.Queue()
      if AG.init then
-		if GEARQUEUE[1] then
+		local GT = GameTimeMilliSeconds()
+		if GEARQUEUE[1] and (GT == IDLE or IDLE == 0) then
 			if GetItemInstanceId(BAG_WORN,GEARQUEUE[1]) then
-				if GetNumBagFreeSlots(BAG_BACKPACK) > 0 then UnequipItem(GEARQUEUE[1])
+				if GetNumBagFreeSlots(BAG_BACKPACK) > 0 then
+					UnequipItem(GEARQUEUE[1])
 				else
 					d(L.NotEnoughSpace)
 					GEARQUEUE = {}
 				end
 			else table.remove(GEARQUEUE,1) end
+			IDLE = GT + 300
 		end
      end
 end
@@ -571,7 +567,7 @@ function AG.UpdateRepair(_,bag)
 	if bag ~= BAG_WORN then return end
 	local condition, count, allcost = 0, 0, 0
 	for _,c in pairs(SLOTS) do
-		if GetItemInstanceId(BAG_WORN,c[1]) then
+		if DoesItemHaveDurability(BAG_WORN,c[1]) then
 			condition = condition + GetItemCondition(BAG_WORN,c[1])
 			allcost = allcost + GetItemRepairCost(BAG_WORN,c[1])
 			count = count + 1
@@ -690,11 +686,11 @@ function AG.UpdateUI(from,to)
 	end
 end
 function AG.UpdateEditPanel(nr)
-	local val,set,c = nil, AG.setdata[nr].Set
+	local val,set,c,_ = nil, AG.setdata[nr].Set
 	SELECT = nr
 	for x = 1,2 do
 		for slot = 1,6 do
-			if set.skill[x] > 0 then _,val = GetSkillAbilityInfo(unpack(AG.setdata[set.skill[x]].Skill[slot])) else val = nil end
+			if set.skill[x] > 0 then _,val = GetAbilityInfoByIndex(AG.GetAbility(AG.setdata[set.skill[x]].Skill[slot])) else val = nil end
 			WM:GetControlByName('AG_Edit_Skill_'..x..'_'..slot):SetNormalTexture(val)
 		end
 	end
@@ -739,7 +735,7 @@ function AG.UpdateInventory()
 			MARK[name]:SetDimensions(12,12)
 			MARK[name]:SetHidden(true)
 			MARK[name]:ClearAnchors()
-			MARK[name]:SetAnchor(6,c:GetNamedChild('Bg'),6,2,2)
+			MARK[name]:SetAnchor(6,c:GetNamedChild('Bg'),6,2,0)
 			MARK[name]:SetTexture('AlphaGear/mark.dds')
 			return MARK[name]
 		end
@@ -878,6 +874,24 @@ function AG.SetAmount(val)
 	AG_PanelOptionPanelAmount:SetText(AG.setdata.setamount)
 	AG.DrawSetButtonsUI()
 end
+function AG.SetSize(init)
+	if not init then AG.account.size = not AG.account.size end
+	if AG.account.size then
+		AG_Panel:SetDimensions(1330,765)
+		AG_PanelSetPanel:SetDimensions(327,720)
+		AG_PanelGearPanel:SetDimensions(650,720)
+		AG_PanelSkillPanel:SetDimensions(314,720)
+		AG_PanelSetPanel:SetAnchor(3,AG_PanelSkillPanel,9,10,0)
+		AG_PanelSkillPanel:SetAnchor(3,AG_PanelGearPanel,9,10,0)
+	else
+		AG_Panel:SetDimensions(670,819)
+		AG_PanelSetPanel:SetDimensions(327,539)
+		AG_PanelGearPanel:SetDimensions(650,224)
+		AG_PanelSkillPanel:SetDimensions(314,539)
+		AG_PanelSetPanel:SetAnchor(3,AG_Panel,3,10,269)
+		AG_PanelSkillPanel:SetAnchor(3,AG_Panel,3,346,269)
+	end
+end
 
 function AG.ResetPosition()
 	AG_Panel:ClearAnchors()
@@ -921,8 +935,7 @@ function AG.ShowButton(c)
 	local type, nr, slot = AG.GetButton(c)
 	local skill, gear = AG.setdata[nr].Skill, AG.setdata[nr].Gear
 	if type == 'Skill' then
-		if skill[slot][1] ~= 0 then
-			-- local _,icon = GetSkillAbilityInfo(unpack(skill[slot]))
+		if skill[slot] ~= 0 then
 			local id = AG.GetAbility(skill[slot])
 			if id > 0 then
 				local _,icon = GetAbilityInfoByIndex(id)
@@ -955,12 +968,13 @@ function AG.ShowMain()
 end
 function AG.SwapMessage()
 	if OPT[6] and AG.setdata.lastset then
-		local pair,x,tex,set = GetActiveWeaponPairInfo()
+		local pair,tex,set = GetActiveWeaponPairInfo()
 		set = AG.setdata[AG.setdata.lastset].Set
+		tex = 'AlphaGear/nothing.dds'
 		if set.gear ~= 0 then
 			if AG.setdata[set.gear].Gear[pair+(1+pair)].id ~= 0 then
 				tex = Zero(set.icon[pair]) or AG.GetSetIcon(set.gear,pair)
-			else tex = 'AlphaGear/nothing.dds' end
+			end
 		end
 		AG_SwapMessageIcon:SetTexture(tex)
 		AG_SwapMessageNumber:SetText(AG.setdata.lastset)
@@ -970,7 +984,7 @@ function AG.SwapMessage()
 	end
 end
 function AG.Swap(_,isSwap)
-    if isSwap and not IsBlockActive()then
+    if isSwap and not IsBlockActive() then
 		if AG.setdata.lastset and SWAP then
 			local pair = GetActiveWeaponPairInfo()
 			if AG.setdata[AG.setdata.lastset].Set.skill[pair] > 0 then AG.LoadBar(AG.setdata[AG.setdata.lastset].Set.skill[pair]) end
@@ -1003,7 +1017,7 @@ function AG.MenuAction(nr)
 			AG.setdata[MENU.nr].Gear[z] = { id = 0, link = 0 }
 			AG.ShowButton(WM:GetControlByName('AG_Button_Gear_'..MENU.nr..'_'..z))
 		end	elseif MENU.type == 2 then for z = 1,6 do
-			AG.setdata[MENU.nr].Skill[z] = {0,0,0}
+			AG.setdata[MENU.nr].Skill[z] = 0
 			AG.ShowButton(WM:GetControlByName('AG_Button_Skill_'..MENU.nr..'_'..z))
 		end else
 			AG.setdata[MENU.nr].Set = { text = {0,0,0}, gear = 0, skill = {0,0}, icon = {0,0}, lock = 0 }
@@ -1035,10 +1049,73 @@ function AG.Tooltip(c,visible,edit)
 		elseif type == 'Skill' then
 			if edit then nr = AG.setdata[SELECT].Set.skill[nr] end
 			if nr > 0 then
-				if AG.setdata[nr].Skill[slot][1] == 0 then return end
-				c.text = SkillTooltip
-				InitializeTooltip(c.text,AG_Panel,3,0,0,9)
-				c.text:SetSkillAbility(unpack(AG.setdata[nr].Skill[slot]))
+				if AG.setdata[nr].Skill[slot] == 0 then return end
+				local s1,s2,s3 = AG.GetSkill(AG.setdata[nr].Skill[slot])
+				if s1 and s2 and s3 then
+					c.text = SkillTooltip
+					InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+					c.text:SetSkillAbility(s1,s2,s3)
+				else
+					c.text = InformationTooltip
+					InitializeTooltip(c.text,AG_Panel,3,0,0,9)
+					local skill,ffrf,res,val = AG.setdata[nr].Skill[slot],FormatFloatRelevantFraction
+					c.text:AddLine(ZOSF('<<ZC:1>>',GetAbilityName(skill)),'ZoFontTooltipTitle')
+
+					local channeled, castTime, channelTime = GetAbilityCastInfo(skill)
+					if(channeled) then
+						res = GetString(SI_ABILITY_TOOLTIP_CHANNEL_TIME_LABEL)
+						val = ZO_FormatTimeMilliseconds(channelTime,6,2,2)
+						c.text:AddLine(res..': '..val,'ZoFontGame')
+					else
+						res = GetString(SI_ABILITY_TOOLTIP_CAST_TIME_LABEL)
+						val = ZO_FormatTimeMilliseconds(castTime,4,2,2)
+						c.text:AddLine(res..': '..val,'ZoFontGame')
+					end
+
+					local target = GetAbilityTargetDescription(skill)
+					if(target) then
+						res = GetString(SI_ABILITY_TOOLTIP_TARGET_TYPE_LABEL)
+						c.text:AddLine(res..': '..target,'ZoFontGame')
+					end
+
+					local minRangeCM, maxRangeCM = GetAbilityRange(skill)
+					if(maxRangeCM > 0) then
+						res = GetString(SI_ABILITY_TOOLTIP_RANGE_LABEL)
+						if(minRangeCM == 0) then
+							val = ZOSF(SI_ABILITY_TOOLTIP_RANGE, ffrf(maxRangeCM/100))
+						else
+							val = ZOSF(SI_ABILITY_TOOLTIP_MIN_TO_MAX_RANGE, ffrf(minRangeCM/100), ffrf(maxRangeCM/100))
+						end
+						c.text:AddLine(res..': '..val,'ZoFontGame')
+					end
+
+					local radiusCM = GetAbilityRadius(skill)
+					local distanceCM = GetAbilityAngleDistance(skill)
+					if(radiusCM > 0) then
+						if(distanceCM > 0) then
+							res = GetString(SI_ABILITY_TOOLTIP_AREA_LABEL)
+							val = ZOSF(SI_ABILITY_TOOLTIP_AOE_DIMENSIONS, ffrf(radiusCM/100), ffrf(distanceCM/100))
+						else
+							res = GetString(SI_ABILITY_TOOLTIP_RADIUS_LABEL)
+							val = ZOSF(SI_ABILITY_TOOLTIP_RADIUS, ffrf(radiusCM/100))
+						end
+						c.text:AddLine(res..': '..val,'ZoFontGame')
+					end
+		
+					local durationMS = GetAbilityDuration(skill)
+					if(durationMS > 0) then
+						res = GetString(SI_ABILITY_TOOLTIP_DURATION_LABEL)
+						val = ZO_FormatTimeMilliseconds(durationMS,12,2,2)
+						c.text:AddLine(res..': '..val,'ZoFontGame')
+					end
+					local cost, mechanic = GetAbilityCost(skill)
+					if(cost > 0) then
+						res = GetString(SI_ABILITY_TOOLTIP_RESOURCE_COST_LABEL)
+						val = GetString("SI_COMBATMECHANICTYPE", mechanic)
+						c.text:AddLine(res..': '..cost..' '..val,'ZoFontGame')
+					end
+					SetTooltipText(c.text,GetAbilityDescription(skill))
+				end
 			else return end
 		elseif c.data and c.data.tip then
 			c.text = InformationTooltip
@@ -1068,12 +1145,12 @@ end
 function AG.TooltipSet(nr,visible)
 	if not nr then return end
 	if visible then
-		local set,val = AG.setdata[nr].Set
+		local set,val,_ = AG.setdata[nr].Set
 		for z = 1,2 do
 			local ico = ''
 			for x = 1,6 do
-				if set.skill[z] > 0 and AG.setdata[set.skill[z]].Skill[x][1] ~= 0 then
-					_,val = GetSkillAbilityInfo(unpack(AG.setdata[set.skill[z]].Skill[x]))
+				if set.skill[z] > 0 and AG.setdata[set.skill[z]].Skill[x] ~= 0 then
+					_,val = GetAbilityInfoByIndex(AG.GetAbility(AG.setdata[set.skill[z]].Skill[x]))
 				else val = 'AlphaGear/grey1.dds' end
 				ico = ico..'|t36:36:'..val..'|t '
 			end
@@ -1123,18 +1200,10 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
     EM:UnregisterForEvent('AG4',EVENT_ADD_ON_LOADED)
 	EM:RegisterForEvent('AG4',EVENT_ACTION_SLOTS_FULL_UPDATE, AG.Swap)
 
-	for x = 1, MAXSLOT do
-		for z = 1,6 do
-			if AG.setdata[x].Skill[z][1] then 
-				local a,b,c = unpack(AG.setdata[x].Skill[z])
-				AG.setdata[x].Skill[z] = GetSkillAbilityId(a,b,c,false) or 0
-			end
-		end
-	end
-
 	local init_account = {
 		option = {true,true,true,true,true,true,true,true,true,true,true,false,true},
 		pos = {GuiRoot:GetWidth()/2 - 335, GuiRoot:GetHeight()/2 - 410},
+		size = false,
 		button = {50,100},
 		setbuttons = {-10,-75},
 	}
@@ -1148,11 +1217,20 @@ EM:RegisterForEvent('AG4',EVENT_ADD_ON_LOADED,function(_,name)
 			Set = { text = {0,0,0}, gear = 0, skill = {0,0}, icon = {0,0}, lock = 0 }
 		}
 		for z = 1,14 do init_data[x].Gear[z] = { id = 0, link = 0 } end
-		-- for z = 1,6 do init_data[x].Skill[z] = { 0,0,0 } end
 		for z = 1,6 do init_data[x].Skill[z] = 0 end
 	end
 	AG.setdata = ZO_SavedVars:New('AGX2_Character',1,nil,init_data)
 	AG.account = ZO_SavedVars:NewAccountWide('AGX2_Account',1,nil,init_account)
+
+	for x = 1, MAXSLOT do
+		for z = 1,6 do
+			if type(AG.setdata[x].Skill[z]) == 'table' then 
+				local a,b,c = unpack(AG.setdata[x].Skill[z])
+				AG.setdata[x].Skill[z] = GetSkillAbilityId(a,b,c,false) or 0
+			end
+		end
+	end
+
 	ZO_CreateStringId('SI_BINDING_NAME_SHOW_AG_WINDOW', 'AlphaGear')
 	ZO_CreateStringId('SI_BINDING_NAME_AG_UNDRESS', 'Unequip all Armor')
 	OPT = AG.account.option
