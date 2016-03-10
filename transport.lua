@@ -1,16 +1,14 @@
-FLASK = {}
-FLASK.__index = FLASK
-function FLASK:new()
-	local z = {}
-	setmetatable(z,FLASK)
-	z.noBad = true
-	z.three = true
-	z.trait = {}
-	z.plant = {}
-	z.result = {}
-	z.found = {}
-	z.solvent = {883,1187,4570,23265,23266,23267,23268,64500,64501}
-	z.reagent = {
+-- ZO_Alchemy_IsThirdAlchemySlotUnlocked()
+
+CS = {}
+
+function CS.FLASK()
+    local self = {
+        noBad, three = false, true
+    }
+    local trait, plant, result, found = {}, {}, {}, {}
+    local solvent = {883,1187,4570,23265,23266,23267,23268,64500,64501}
+    local reagent = {
 		{30165,2,14,12,23}, --1
 		{30158,9,3,18,13},  --2
 		{30155,6,8,1,22},   --3
@@ -30,8 +28,8 @@ function FLASK:new()
 		{30156,8,6,15,12},  --17
 		{30166,1,13,11,20}  --18
 	}
-	z.path = 'esoui/art/icons/alchemy/crafting_alchemy_trait_'
-	z.icon = {
+    local path = 'esoui/art/icons/alchemy/crafting_alchemy_trait_'
+    local icon = {
 		'restorehealth','ravagehealth',
 		'restoremagicka','ravagemagicka',
 		'restorestamina','ravagestamina',
@@ -45,71 +43,107 @@ function FLASK:new()
 		'speed','reducespeed',
 		'invisible','detection',
 	}
-	return z
-end
-function FLASK:setTraits(traits)
-    self.trait = traits
-end
-function FLASK:isBad(trait)
-	if trait%2 == 0 and trait < 24 then return true end
-	return false
-end
-function FLASK:getAntiTrait(trait)
-	if trait%2 == 0 then return trait - 1 end
-	return trait + 1
-end
-function FLASK:checkTraits()
-	local bad, cur, acur, val, aval = {}
-	self.found = {}
-	for _,x in pairs(self.plant) do
-		for a = 2,5 do
-			cur = self.reagent[x][a]
-			acur = self:getAntiTrait(cur)
-			for _,y in pairs(self.trait) do
-				val = self.found[cur] or 0
-				aval = self.found[acur] or 0
-				if cur == y then self.found[cur] = val + 1 end
-				self.found[acur] = aval - 1
-			end
-			val = bad[cur] or 0
-			aval = bad[acur] or 0
-			if self:isBad(cur) then bad[cur] = val + 1
-			else bad[acur] = aval - 1 end
-		end
-	end
-	if self.noBad then for _,y in pairs(bad) do if y > 1 then self.found = {}; return end end end
-end
-function FLASK:getReagents()
-	local size, ok = #self.reagent
-    for x = 1,size do
-        for y = x+1, size do
-            ok = {false,false,false}
-            self.plant = {x,y}
-            self:checkTraits()
-            for i = 1,3 do
-                local t = self.trait[i]
-                if t then if self.found[t] and self.found[t] > 1 then ok[i] = true end
-                else ok[i] = true end
-            end
-            if ok[1] and ok[2] and ok[3] then table.insert(self.result,self.plant) end
-            if self.three then
-                for z = y+1, size do
-                    ok = {false,false,false}
-                    self.plant = {x,y,z}
-    	            self:checkTraits()
-                    for i = 1,3 do
-                        local t = self.trait[i]
-                        if t then if self.found[t] and self.found[t] > 1 then ok[i] = true end
-                        else ok[i] = true end
+
+    local function SplitLink(link,nr)
+    	local split = {SplitString(':', link)}
+    	if split[nr] then return tonumber(split[nr]) else return false end
+    end
+
+    function self.GetTraitIcon(nr)
+	    return path..icon[nr]..'.dds'
+    end
+
+    function self.GetReagent(nr)
+        local link, icon, bag, bank
+        link = ('|H1:item:%u:1:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'):format(reagent[nr][1])
+        icon = GetItemLinkInfo(link)
+        bag, bank = GetItemLinkStacks(link)
+        return icon, (bag + bank), link
+    end
+
+    function self.GetReagentBagSlot(nr)
+    	local bag, id = SHARED_INVENTORY:GenerateFullSlotData(nil,BAG_BACKPACK,BAG_BANK), reagent[nr][1]
+    	for _,data in pairs(bag) do
+    		local scanid = SplitLink(GetItemLink(data.bagId,data.slotIndex),3)
+    		if id == scanid then return data.bagId, data.slotIndex end
+    	end
+    end
+
+    function self.SetTraits(traits)
+        trait = traits
+    end
+
+    local function PutReagents()
+        table.insert(result,{plant,{found[trait[1]],found[trait[2]],found[trait[3]]}})
+    end
+
+    local function IsBad(val)
+    	if val%2 == 0 and val < 24 then return true end
+    	return false
+    end
+
+    local function GetAntiTrait(val)
+    	if val%2 == 0 then return val - 1 end
+    	return val + 1
+    end
+
+    local function GetTraits()
+    	local bad, cur, acur, val, aval = {}
+    	found = {}
+    	for _,x in pairs(plant) do
+    		for a = 2,5 do
+    			cur = reagent[x][a]
+    			acur = GetAntiTrait(cur)
+    			for _,y in pairs(trait) do
+    				val = found[cur] or 0
+    				aval = found[acur] or 0
+    				if cur == y then found[cur] = val + 1 end
+    				found[acur] = aval - 1
+    			end
+    			val = bad[cur] or 0
+    			aval = bad[acur] or 0
+    			if IsBad(cur) then bad[cur] = val + 1
+    			else bad[acur] = aval - 1 end
+    		end
+    	end
+    	if self.noBad then for _,y in pairs(bad) do if y > 1 then found = {}; return end end end
+    end
+
+    function self.GetReagentCombination()
+    	local size, ok, t = #reagent
+        for x = 1,size do
+            for y = x+1, size do
+                ok = {false,false,false}
+                plant = {x,y}
+                GetTraits()
+                for i = 1,3 do
+                    t = trait[i]
+                    if t then if found[t] and found[t] > 1 then ok[i] = true end
+                    else ok[i] = true end
+                end
+                if ok[1] and ok[2] and ok[3] then PutReagents() end
+                if self.three then
+                    for z = y+1, size do
+                        ok = {false,false,false}
+                        plant = {x,y,z}
+        	            GetTraits()
+                        for i = 1,3 do
+                            t = trait[i]
+                            if t then if found[t] and found[t] > 1 then ok[i] = true end
+                            else ok[i] = true end
+                        end
+                        if ok[1] and ok[2] and ok[3] then PutReagents() end
                     end
-                    if ok[1] and ok[2] and ok[3] then table.insert(self.result,self.plant) end
                 end
             end
         end
+        for nr,x in pairs(result) do
+            print(nr..': '..x[1][1]..' ('..x[2][1]..'), '..x[1][2]..' ('..x[2][2]..'), '..(x[1][3] or '-')..' ('..(x[2][3] or '-')..')')
+        end
     end
-    for nr,x in pairs(self.result) do print(nr..': '..x[1]..','..x[2]..','..(x[3] or '-')) end
+    return self
 end
 
-flask = FLASK:new()
-flask:setTraits({1,3,5})
-flask:getReagents()
+flask = CS.FLASK()
+flask.SetTraits({1,3,5})
+flask.GetReagentCombination()
