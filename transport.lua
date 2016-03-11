@@ -4,9 +4,11 @@ CS = {}
 
 function CS.FLASK()
     local self = {
-        noBad, three = false, true
+        noBad = true,
+        three = true,
+        selectedSolvent = nil
     }
-    local trait, plant, result, found = {}, {}, {}, {}
+    local trait, plant, result, found = {0,0,0}, {0,0,0}, {}, {}
     local solvent = {883,1187,4570,23265,23266,23267,23268,64500,64501}
     local reagent = {
 		{30165,2,14,12,23}, --1
@@ -44,6 +46,12 @@ function CS.FLASK()
 		'invisible','detection',
 	}
 
+    local function Quality(nr,a,hex)
+	    local quality = {[0]={0.65,0.65,0.65,a},[1]={1,1,1,a},[2]={0.17,0.77,0.05,a},[3]={0.22,0.57,1,a},[4]={0.62,0.18,0.96,a},[5]={0.80,0.66,0.10,a}}
+	    local qualityhex = {[0]='B3B3B3',[1]='FFFFFF',[2]='2DC50E',[3]='3A92FF',[4]='A02EF7',[5]='EECA2A'}
+	    if hex then return qualityhex[nr] else return unpack(quality[nr]) end
+    end
+
     local function SplitLink(link,nr)
     	local split = {SplitString(':', link)}
     	if split[nr] then return tonumber(split[nr]) else return false end
@@ -61,7 +69,7 @@ function CS.FLASK()
         return icon, (bag + bank), link
     end
 
-    function self.GetReagentBagSlot(nr)
+    local function GetReagentBagSlot(nr)
     	local bag, id = SHARED_INVENTORY:GenerateFullSlotData(nil,BAG_BACKPACK,BAG_BANK), reagent[nr][1]
     	for _,data in pairs(bag) do
     		local scanid = SplitLink(GetItemLink(data.bagId,data.slotIndex),3)
@@ -71,10 +79,6 @@ function CS.FLASK()
 
     function self.SetTraits(traits)
         trait = traits
-    end
-
-    local function PutReagents()
-        table.insert(result,{plant,{found[trait[1]],found[trait[2]],found[trait[3]]}})
     end
 
     local function IsBad(val)
@@ -88,62 +92,118 @@ function CS.FLASK()
     end
 
     local function GetTraits()
-    	local bad, cur, acur, val, aval = {}
-    	found = {}
+    	local cur, acur
+    	found = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
     	for _,x in pairs(plant) do
     		for a = 2,5 do
     			cur = reagent[x][a]
     			acur = GetAntiTrait(cur)
-    			for _,y in pairs(trait) do
-    				val = found[cur] or 0
-    				aval = found[acur] or 0
-    				if cur == y then found[cur] = val + 1 end
-    				found[acur] = aval - 1
-    			end
-    			val = bad[cur] or 0
-    			aval = bad[acur] or 0
-    			if IsBad(cur) then bad[cur] = val + 1
-    			else bad[acur] = aval - 1 end
+				found[cur] = found[cur] + 1
+				found[acur] = found[acur] - 1
     		end
     	end
-    	if self.noBad then for _,y in pairs(bad) do if y > 1 then found = {}; return end end end
+    	if self.noBad then for x,y in pairs(found) do if IsBad(x) and y > 1 then found = false; return end end end
     end
 
+    local function SetResult()
+        local ok, t = {false,false,false}
+        GetTraits()
+        if found then
+            for i = 1,3 do
+                t = trait[i]
+                if t then if found[t] and found[t] > 1 then ok[i] = true end
+                else ok[i] = true end
+            end 
+            if ok[1] and ok[2] and ok[3] then
+                for nr,x in pairs(found) do if x < 2 then found[nr] = nil end end
+                table.insert(result,{plant,found})
+            end
+        end
+    end
+    
     function self.GetReagentCombination()
-    	local size, ok, t = #reagent
+    	local size = #reagent
         for x = 1,size do
             for y = x+1, size do
-                ok = {false,false,false}
                 plant = {x,y}
-                GetTraits()
-                for i = 1,3 do
-                    t = trait[i]
-                    if t then if found[t] and found[t] > 1 then ok[i] = true end
-                    else ok[i] = true end
-                end
-                if ok[1] and ok[2] and ok[3] then PutReagents() end
+                SetResult()
                 if self.three then
                     for z = y+1, size do
-                        ok = {false,false,false}
                         plant = {x,y,z}
-        	            GetTraits()
-                        for i = 1,3 do
-                            t = trait[i]
-                            if t then if found[t] and found[t] > 1 then ok[i] = true end
-                            else ok[i] = true end
-                        end
-                        if ok[1] and ok[2] and ok[3] then PutReagents() end
+                        SetResult()
                     end
                 end
             end
         end
         for nr,x in pairs(result) do
-            print(nr..': '..x[1][1]..' ('..x[2][1]..'), '..x[1][2]..' ('..x[2][2]..'), '..(x[1][3] or '-')..' ('..(x[2][3] or '-')..')')
+            print(nr..') Reagent-Numbers: '..x[1][1]..', '..x[1][2]..', '..(x[1][3] or '-'))
+            local t = nr..') Traits: '
+            for y,z in pairs(x[2]) do t = t..(y or '-')..' ['..z..'], ' end
+            print(t)
+            print('--')
         end
     end
+
+    local function GetPotion(row)
+        GetReagentCombination()
+        local rb, rs, slot3, traits, link, color = {}, {}, false, {}
+        local good, bad = {{1,1,1,1},{0,0.8,0,1},{0.2,1,0.2,1}}, {{1,1,1,1},{0.8,0,0,1},{1,0.2,0.2,1}}
+        
+        for x,_ in pairs(trait) do rb[x], rs[x] = GetReagentBagSlot(result[row][1][x]) end
+        rb[4], rs[4] = GetReagentBagSlot(solvent[self.selectedSolvent])
+        
+        if self.three and rb[3] and rs[3] then slot3 = true elseif not self.three then slot3 = true end
+            
+        if rb[4] and rs[4] and rb[1] and rs[1] and rb[2] and rs[2] and slot3 then
+            local _, icon = GetAlchemyResultingItemInfo(rb[4],rs[4],rb[1],rs[1],rb[2],rs[2],rb[3],rs[3])
+            link = GetAlchemyResultingItemLink(rb[4],rs[4],rb[1],rs[1],rb[2],rs[2],rb[3],rs[3])
+            for y,z in pairs(result[row][2]) do
+                if IsBad(y) then color = bad else color = good end
+                table.insert(traits,{self.GetTraitIcon(y),color[z]})
+            end
+            return true, zo_strformat('|t32:32:<<1>>|t <<C:2>>', icon, link), link, rb, rs, traits
+        else
+            for y,x in pairs(plant) do
+                local icon, _, link = self.GetReagent(x)
+                item = item..zo_strformat('|t32:32:<<1>>|t', icon)
+                color = color..zo_strformat('<<C:1>>', link)
+                if y < #plant then
+                    item = item..' + '
+                    color = color..'\n'
+                end
+            end
+            return false, item, color
+        end
+    end
+
+    function self.GetAllPotion()
+        for row,_ in ipairs(result) do
+            local isPotion, item, link, rb, rs, traits = GetPotion(row)
+            if isPotion then d(item) else d(item) end
+        end
+    end
+
     return self
 end
 
 flask = CS.FLASK()
 flask.SetTraits({1,3,5})
 flask.GetReagentCombination()
+--flask.GetAllPotion()
+
+
+	chest		'|H1:item:46117:1:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'
+	head		'|H1:item:46116:1:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'
+	legs		'|H1:item:46120:1:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'
+	
+for styleItemIndex = 1, GetNumSmithingStyleItems() do
+    local itemName, _, _, meetsUsageRequirement, itemStyle = GetSmithingStyleItemInfo(styleItemIndex)
+    local itemLink = GetSmithingStyleItemLink(styleItemIndex, LINK_STYLE_DEFAULT)
+    if meetsUsageRequirement and itemStyle ~= ITEMSTYLE_UNIVERSAL then
+        local styleName = GetString("SI_ITEMSTYLE", itemStyle)
+        local associatedStone = zo_strformat(SI_TOOLTIP_ITEM_NAME, itemName)
+    end
+end
+
+
+
