@@ -207,3 +207,332 @@ end
 
 
 
+----
+
+CraftStore = {
+	name = 'CraftStore4',
+	version = '4.00',
+	author = 'AlphaLemming',
+	account, character
+}
+
+function CraftStore:PANEL()
+	self = {}
+	local WM = WINDOW_MANAGER
+	local CSP = CraftStore:PLAYER()
+	
+	function self:SetIcon(craft,line,trait)
+		if not craft or not line or not trait then return end
+		local CHAR = CSP:GetPlayer()
+		local traitname = GetString('SI_ITEMTRAITTYPE',GetSmithingResearchLineTraitInfo(craft,line,trait))
+		local c = WM:GetControlByName('CS4_PanelCraft'..craft..'Line'..line..'Trait'..trait)
+		local known = CS.account.crafting.research[SELECTED_PLAYER][craft][line][trait] or false
+		local store = CS.account.crafting.stored[craft][line][trait] or { link = false, owner = false }
+		local now, tip = GetTimeStamp(), ''
+		local function CountTraits()
+			local count = 0
+			for x, trait in pairs(CS.account.crafting.research[SELECTED_PLAYER][craft][line]) do
+				if trait == true then count = count + 1 end
+			end
+			return count
+		end
+		for z, char in pairs(CSP:GetCharacters()) do
+			local val = CS.account.crafting.research[char][craft][line][trait] or false
+			if val == true then
+				tip = tip..'\n|t20:20:esoui/art/buttons/accept_up.dds|t |c00FF00'..char..'|r'
+			elseif val == false then
+				tip = tip..'\n|t20:20:esoui/art/buttons/decline_up.dds|t |cFF1010'..char..'|r'
+			elseif val and val > 0 then
+				if char == CURRENT_PLAYER then
+					local dur,remain = GetSmithingResearchLineTraitTimes(craft,line,trait)
+					tip = tip..'\n|t23:23:esoui/art/mounts/timer_icon.dds|t |c66FFCC'..char..' ('..CS.GetTime(remain)..')|r'
+				else
+					tip = tip..'\n|t23:23:esoui/art/mounts/timer_icon.dds|t |c66FFCC'..char..' ('..CS.GetTime(GetDiffBetweenTimeStamps(val,now))..')|r'
+				end
+			end
+		end
+		control:GetParent().data = { info = '|cFFFFFF'..traitname..'|r'..tip..'\n'..L.TT[6] }
+		if known == false then
+			control:SetColor(1,0,0,1)
+			control:SetTexture('esoui/art/buttons/decline_up.dds')
+			if store.link and store.owner then
+				local isSet = GetItemLinkSetInfo(store.link)
+				local mark = true
+				if not CS.account.option[14] and isSet then mark = false end
+				if mark then 
+					tip = '\n|t20:20:esoui/art/buttons/pointsplus_up.dds|t |cE8DFAF'..store.owner..'|r'..tip
+					control:SetColor(1,1,1,1)
+					control:SetTexture('esoui/art/buttons/pointsplus_up.dds')
+					control:GetParent().data = { link = store.link, addline = {tip}, research = {craft,line,trait,store.owner} }
+				end
+			end
+		elseif known == true then
+			control:SetColor(0,1,0,1)
+			control:SetTexture('esoui/art/buttons/accept_up.dds')
+		else
+			control:SetColor(0.4,1,0.8,1)
+			control:SetTexture('esoui/art/mounts/timer_icon.dds')
+		end
+		WM:GetControlByName('CS_PanelCraft'..craft..'Line'..line..'Count'):SetText(CountTraits())
+	end
+	
+	return self
+end
+
+function CraftStore:PLAYER()
+	self = {}
+	local EM = EVENT_MANAGER
+	local SELF, CHAR = GetUnitName('player')
+	
+	function self:Init()
+		local crafting = {CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING}
+		account_init = {
+			stock = {},
+			stored = {},
+			research = {},
+			player = {
+				race = zo_strformat('<<C:1>>',GetUnitRace('player')),
+				class = GetUnitClassId('player'),
+				level = 1,
+				elevel = GetUnitEffectiveLevel('player'),
+				alliance = GetUnitAlliance('player'),
+				styles = false,
+				recipes = false,
+				speed = 0,
+				stamina = 0,
+				capacity = 0,
+				training = 0,
+				anncounced = false,
+				crafting = {}
+			}
+		}
+		for _,craft in ipairs(crafting) do
+			account_init.research[craft] = {}
+			for line = 1, GetNumSmithingResearchLines(craft) do
+				account_init.research[craft][line] = {}
+				account_init.research[craft].active = false
+				local _,_,maxlines = GetSmithingResearchLineInfo()
+				for trait = 1, maxtraits do SetTrait(craft,line,trait) end
+			end
+		end
+		CraftStore.account = ZO_SavedVars:NewAccountWide('CS4_Account',1,nil,account_init)
+		CraftStore.character = ZO_SavedVars:New('CS4_Character',1,nil,character_init)
+		SetPlayerLevel()
+		SetPlayerMount()
+		SetPlayerSkill()
+		if CraftStore.account.mainchar then CHAR = CraftStore.account.mainchar
+		else CHAR = SELF end
+	end
+
+	function self:SetPlayer(player) CHAR = player end
+	
+	function self:SetPlayerStyles(val) CraftStore.account.player[CHAR].styles = val or false end
+	
+	function self:SetPlayerRecipes(val) CraftStore.account.player[CHAR].recipes = val or false end
+	
+	function self:SetPlayerAnnounced(player,val) CraftStore.account.player[player].anncounced = val or false end
+	
+	function self:GetPlayer() return CHAR end
+	
+	function self:GetPlayerValues() return CraftStore.account.player[CHAR] end
+	
+	function self:GetPlayerStyles() return CraftStore.account.player[CHAR].styles or false end
+	
+	function self:GetPlayerRecipes() return CraftStore.account.player[CHAR].recipes or false end
+	
+	function self:GetPlayerAnnounced(player) return CraftStore.account.player[player].anncounced or false end
+	
+	function self:GetCharacters()
+		local function ts(t)
+			local oi = {}
+			for key in pairs(t) do table.insert(oi,key) end
+			return table.sort(oi)
+		end
+		return ts(CraftStore.account.player)
+	end
+	
+	local function SetPlayerLevel() CraftStore.account.player[SELF].level = GetUnitLevel('player') + (GetUnitVeteranRank('player') - 1) end
+	
+	local function SetPlayerMount()
+		local ride = {GetRidingStats()}
+		local ridetime = GetTimeUntilCanBeTrained()/1000
+		if ridetime > 0 then ridetime = ridetime + GetTimeStamp() else ridetime = 0 end
+		CraftStore.account.player[SELF].speed = ride[5]..' / '..ride[6]
+		CraftStore.account.player[SELF].stamina = ride[3]..' / '..ride[4]
+		CraftStore.account.player[SELF].capacity = ride[1]..' / '..ride[2]
+		CraftStore.account.player[SELF].training = ridetime
+	end
+	
+	local function SetPlayerSkill()
+		local function GetBonus(bonus,craft)
+			local level = GetNonCombatBonus(bonus) or 1
+			local _,rank = GetSkillLineInfo(unpack(GetCraftingSkillLineIndices(craft)))
+			return {rank, level, GetMaxSimultaneousSmithingResearch(craft) or 1}
+		end
+		CraftStore.account.player[SELF].crafting = {
+			[CRAFTING_TYPE_BLACKSMITHING] = GetBonus(NON_COMBAT_BONUS_BLACKSMITHING_LEVEL, CRAFTING_TYPE_BLACKSMITHING),
+			[CRAFTING_TYPE_CLOTHIER] = GetBonus(NON_COMBAT_BONUS_CLOTHIER_LEVEL, CRAFTING_TYPE_CLOTHIER),
+			[CRAFTING_TYPE_ENCHANTING] = GetBonus(NON_COMBAT_BONUS_ENCHANTING_LEVEL, CRAFTING_TYPE_ENCHANTING),
+			[CRAFTING_TYPE_ALCHEMY] = GetBonus(NON_COMBAT_BONUS_ALCHEMY_LEVEL, CRAFTING_TYPE_ALCHEMY),
+			[CRAFTING_TYPE_PROVISIONING] = GetBonus(NON_COMBAT_BONUS_PROVISIONING_LEVEL, CRAFTING_TYPE_PROVISIONING),
+			[CRAFTING_TYPE_WOODWORKING] = GetBonus(NON_COMBAT_BONUS_WOODWORKING_LEVEL, CRAFTING_TYPE_WOODWORKING)
+		}			
+	end
+
+	local function SetTrait(craft,line,trait)
+		local _,_,known = GetSmithingResearchLineTraitInfo(craft,line,trait)
+		local _,dur = GetSmithingResearchLineTraitTimes(craft,line,trait)
+		if not known and dur > 0 then known = dur end
+		CraftStore.account.research[SELF][craft][line][trait] = known
+	end
+
+	function self:GetTrait(craft,line,trait)
+		local t,_ = CraftStore.account[CHAR].research[craft][line][trait]
+		if t ~= false and t ~= true	and t > 0 then _,t = GetSmithingResearchLineTraitTimes(craft,line,trait) end
+		return t
+	end	
+
+	local function SetStored(craft,line,trait)
+	end
+	
+	function self:GetStored(craft,line,trait)
+		local s = CraftStore.account.stored
+		if s[craft] and s[craft][line] and s[craft][line][trait] then return s[craft][line][trait] end
+		return false
+	end		
+
+	EM:RegisterEvent('CraftStore_TraitUpdate', EVENT_SMITHING_TRAIT_RESEARCH_STARTED, SetTrait)
+	EM:RegisterEvent('CraftStore_TraitUpdate', EVENT_SMITHING_TRAIT_RESEARCH_COMPLETED, SetTrait)
+	EM:RegisterEvent('CraftStore_PlayerLevel', EVENT_LEVEL_UPDATE, SetPlayerLevel)
+	EM:RegisterEvent('CraftStore_PlayerLevel', EVENT_VETERAN_RANK_UPDATE, SetPlayerLevel)
+	EM:RegisterEvent('CraftStore_MountImproved', EVENT_RIDING_SKILL_IMPROVEMENT, SetPlayerMount)
+	ZO_PreHook('PutPointIntoSkillAbility', SetPlayerSkill)
+	ZO_PreHook('ChooseAbilityProgressionMorph', SetPlayerSkill)
+	SHARED_INVENTORY:RegisterCallback('SlotAdded',OnSlotAdded)
+	SHARED_INVENTORY:RegisterCallback('SlotRemoved',OnSlotRemoved)
+	-- ZO_PreHook('ZO_Skills_PurchaseAbility', SetPlayerSkill)
+	-- ZO_PreHook('ZO_Skills_UpgradeAbility', SetPlayerSkill)
+	-- ZO_PreHook('ZO_Skills_MorphAbility', SetPlayerSkill)
+	
+	return self
+end
+
+function CraftStore:DRAW()
+	self = {}
+	local WM = WINDOW_MANAGER
+	
+	function self:Button(name, parent)
+		local c = WM:GetControlByName(name) or WM:CreateControl(name, parent, CT_BUTTON)
+		c:SetDimensions(40,40)
+		c:SetHorizontalAlignment(TEXT_ALIGN_CENTER)
+		c:SetVerticalAlignment(TEXT_ALIGN_CENTER)
+		c:SetClickSound('Click')
+		c:SetNormalTexture('CraftStore/grey.dds')
+		c:SetMouseOverTexture('CraftStore/light.dds')
+		c:SetFont('CSFont')
+		c:SetNormalFontColor(1,1,1,1)
+		c:SetMouseOverFontColor(1,0.66,0.2,1)
+		return c
+	end
+	
+	return self
+end
+
+function CraftStore:TRAITS()
+	self = {}
+	local armor_trait = {
+		[ITEM_TRAIT_TYPE_ARMOR_STURDY] = 1,
+		[ITEM_TRAIT_TYPE_ARMOR_IMPENETRABLE] = 2,
+		[ITEM_TRAIT_TYPE_ARMOR_REINFORCED] = 3,
+		[ITEM_TRAIT_TYPE_ARMOR_WELL_FITTED] = 4,
+		[ITEM_TRAIT_TYPE_ARMOR_TRAINING] = 5,
+		[ITEM_TRAIT_TYPE_ARMOR_INFUSED] = 6,
+		[ITEM_TRAIT_TYPE_ARMOR_EXPLORATION] = 7,
+		[ITEM_TRAIT_TYPE_ARMOR_DIVINES] = 8,
+		[ITEM_TRAIT_TYPE_ARMOR_NIRNHONED] = 9
+	}
+	local weapon_trait = {
+		[ITEM_TRAIT_TYPE_WEAPON_POWERED] = 1,
+		[ITEM_TRAIT_TYPE_WEAPON_CHARGED] = 2,
+		[ITEM_TRAIT_TYPE_WEAPON_PRECISE] = 3,
+		[ITEM_TRAIT_TYPE_WEAPON_INFUSED] = 4,
+		[ITEM_TRAIT_TYPE_WEAPON_DEFENDING] = 5,
+		[ITEM_TRAIT_TYPE_WEAPON_TRAINING] = 6,
+		[ITEM_TRAIT_TYPE_WEAPON_SHARPENED] = 7,
+		[ITEM_TRAIT_TYPE_WEAPON_WEIGHTED] = 8,
+		[ITEM_TRAIT_TYPE_WEAPON_NIRNHONED] = 9
+	}
+	local armor = {
+		[ARMORTYPE_HEAVY] = {
+			[EQUIP_TYPE_CHEST] = {CRAFTING_TYPE_BLACKSMITHING,8},
+			[EQUIP_TYPE_FEET] = {CRAFTING_TYPE_BLACKSMITHING,9},
+			[EQUIP_TYPE_HAND] = {CRAFTING_TYPE_BLACKSMITHING,10},
+			[EQUIP_TYPE_HEAD] = {CRAFTING_TYPE_BLACKSMITHING,11},
+			[EQUIP_TYPE_LEGS] = {CRAFTING_TYPE_BLACKSMITHING,12},
+			[EQUIP_TYPE_SHOULDERS] = {CRAFTING_TYPE_BLACKSMITHING,13},
+			[EQUIP_TYPE_WAIST] = {CRAFTING_TYPE_BLACKSMITHING,14}
+		},
+		[ARMORTYPE_MEDIUM] = {
+			[EQUIP_TYPE_CHEST] = {CRAFTING_TYPE_CLOTHIER,8},
+			[EQUIP_TYPE_FEET] = {CRAFTING_TYPE_CLOTHIER,9},
+			[EQUIP_TYPE_HAND] = {CRAFTING_TYPE_CLOTHIER,10},
+			[EQUIP_TYPE_HEAD] = {CRAFTING_TYPE_CLOTHIER,11},
+			[EQUIP_TYPE_LEGS] = {CRAFTING_TYPE_CLOTHIER,12},
+			[EQUIP_TYPE_SHOULDERS] = {CRAFTING_TYPE_CLOTHIER,13},
+			[EQUIP_TYPE_WAIST] = {CRAFTING_TYPE_CLOTHIER,14}
+		},
+		[ARMORTYPE_LIGHT] = {
+			[EQUIP_TYPE_CHEST] = {CRAFTING_TYPE_CLOTHIER,1},
+			[EQUIP_TYPE_FEET] = {CRAFTING_TYPE_CLOTHIER,2},
+			[EQUIP_TYPE_HAND] = {CRAFTING_TYPE_CLOTHIER,3},
+			[EQUIP_TYPE_HEAD] = {CRAFTING_TYPE_CLOTHIER,4},
+			[EQUIP_TYPE_LEGS] = {CRAFTING_TYPE_CLOTHIER,5},
+			[EQUIP_TYPE_SHOULDERS] = {CRAFTING_TYPE_CLOTHIER,6},
+			[EQUIP_TYPE_WAIST] = {CRAFTING_TYPE_CLOTHIER,7}
+		}
+	}
+	local weapon = {
+		[WEAPONTYPE_AXE] = {CRAFTING_TYPE_BLACKSMITHING,1},
+		[WEAPONTYPE_HAMMER] = {CRAFTING_TYPE_BLACKSMITHING,2},
+		[WEAPONTYPE_SWORD] = {CRAFTING_TYPE_BLACKSMITHING,3},
+		[WEAPONTYPE_TWO_HANDED_AXE] = {CRAFTING_TYPE_BLACKSMITHING,4},
+		[WEAPONTYPE_TWO_HANDED_HAMMER] = {CRAFTING_TYPE_BLACKSMITHING,5},
+		[WEAPONTYPE_TWO_HANDED_SWORD] = {CRAFTING_TYPE_BLACKSMITHING,6},
+		[WEAPONTYPE_DAGGER] = {CRAFTING_TYPE_BLACKSMITHING,7},
+		[WEAPONTYPE_BOW] = {CRAFTING_TYPE_WOODWORKING,1},
+		[WEAPONTYPE_FIRE_STAFF] = {CRAFTING_TYPE_WOODWORKING,2},
+		[WEAPONTYPE_FROST_STAFF] = {CRAFTING_TYPE_WOODWORKING,3},
+		[WEAPONTYPE_LIGHTNING_STAFF] = {CRAFTING_TYPE_WOODWORKING,4},
+		[WEAPONTYPE_HEALING_STAFF] = {CRAFTING_TYPE_WOODWORKING,5},
+		[WEAPONTYPE_SHIELD] = {CRAFTING_TYPE_WOODWORKING,6},
+	}
+
+	function self:GetArmorTraits() return armor_trait end
+	
+	function self:GetWeaponTraits() return weapon_trait end
+	
+	function self:FindTrait(link)
+		if not link then return false end
+		local at, wt = GetItemLinkArmorType(link), GetItemLinkWeaponType(link)
+		if at ~= ARMORTYPE_NONE then
+			local trait = GetItemLinkTraitInfo(link)
+			if armor_trait[trait] then
+				local equip = GetItemLinkEquipType(link)
+				local craft, line = unpack(armor[at][equip]) or false, false
+				if craft and line and trait then return craft, line, armor_trait[trait] end
+			end			
+		elseif wt ~= WEAPONTYPE_NONE then
+			local trait = GetItemLinkTraitInfo(link)
+			if weapon_trait[trait] or (wt == WEAPONTYPE_SHIELD and armor_trait[trait]) then
+				local craft, line = unpack(weapon[wt]) or false, false
+				if craft and line and trait then
+					if wt == WEAPONTYPE_SHIELD then return craft, line, armor_trait[trait]
+					else return craft, line, weapon_trait[trait] end
+				end
+			end
+		end
+		return false
+	end
+	
+	return self
+end
