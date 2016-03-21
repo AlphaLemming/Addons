@@ -1,214 +1,3 @@
--- ZO_Alchemy_IsThirdAlchemySlotUnlocked()
-
-CS = {}
-
-function CS.FLASK()
-    local self = {
-        noBad = true,
-        three = true,
-        selectedSolvent = nil
-    }
-    local trait, plant, result, found = {0,0,0}, {0,0,0}, {}, {}
-    local solvent = {883,1187,4570,23265,23266,23267,23268,64500,64501}
-    local reagent = {
-		{30165,2,14,12,23}, --1
-		{30158,9,3,18,13},  --2
-		{30155,6,8,1,22},   --3
-		{30152,18,2,9,4},   --4
-		{30162,7,5,16,11},  --5
-		{30148,4,10,1,23},  --6
-		{30149,16,2,7,6},   --7
-		{30161,3,9,2,24},   --8
-		{30160,17,1,10,3},  --9
-		{30154,10,4,17,12}, --10
-		{30157,5,7,2,21},   --11
-		{30151,2,4,6,20},   --12
-		{30164,1,3,5,19},   --13
-		{30159,11,22,24,19},--14
-		{30163,15,1,8,5},   --15
-		{30153,13,21,23,19},--16
-		{30156,8,6,15,12},  --17
-		{30166,1,13,11,20}  --18
-	}
-    local path = 'esoui/art/icons/alchemy/crafting_alchemy_trait_'
-    local icon = {
-		'restorehealth','ravagehealth',
-		'restoremagicka','ravagemagicka',
-		'restorestamina','ravagestamina',
-		'increaseweaponpower','lowerweaponpower',
-		'increasespellpower','lowerspellpower',
-		'weaponcrit','lowerweaponcrit',
-		'spellcrit','lowerspellcrit',
-		'increasearmor','lowerarmor',
-		'increasespellresist','lowerspellresist',
-		'unstoppable','stun',
-		'speed','reducespeed',
-		'invisible','detection',
-	}
-
-    local function Quality(nr,a,hex)
-	    local quality = {[0]={0.65,0.65,0.65,a},[1]={1,1,1,a},[2]={0.17,0.77,0.05,a},[3]={0.22,0.57,1,a},[4]={0.62,0.18,0.96,a},[5]={0.80,0.66,0.10,a}}
-	    local qualityhex = {[0]='B3B3B3',[1]='FFFFFF',[2]='2DC50E',[3]='3A92FF',[4]='A02EF7',[5]='EECA2A'}
-	    if hex then return qualityhex[nr] else return unpack(quality[nr]) end
-    end
-
-    local function SplitLink(link,nr)
-    	local split = {SplitString(':', link)}
-    	if split[nr] then return tonumber(split[nr]) else return false end
-    end
-
-    function self.GetTraitIcon(nr)
-	    return path..icon[nr]..'.dds'
-    end
-
-    function self.GetReagent(nr)
-        local link, icon, bag, bank
-        link = ('|H1:item:%u:1:1:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'):format(reagent[nr][1])
-        icon = GetItemLinkInfo(link)
-        bag, bank = GetItemLinkStacks(link)
-        return icon, (bag + bank), link
-    end
-
-    local function GetReagentBagSlot(nr)
-    	local bag, id = SHARED_INVENTORY:GenerateFullSlotData(nil,BAG_BACKPACK,BAG_BANK), reagent[nr][1]
-    	for _,data in pairs(bag) do
-    		local scanid = SplitLink(GetItemLink(data.bagId,data.slotIndex),3)
-    		if id == scanid then return data.bagId, data.slotIndex end
-    	end
-    end
-
-    function self.SetTraits(traits)
-        trait = traits
-    end
-
-    local function IsBad(val)
-    	if val%2 == 0 and val < 24 then return true end
-    	return false
-    end
-
-    local function GetAntiTrait(val)
-    	if val%2 == 0 then return val - 1 end
-    	return val + 1
-    end
-
-    local function GetTraits()
-    	local cur, acur
-    	found = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
-    	for _,x in pairs(plant) do
-    		for a = 2,5 do
-    			cur = reagent[x][a]
-    			acur = GetAntiTrait(cur)
-				found[cur] = found[cur] + 1
-				found[acur] = found[acur] - 1
-    		end
-    	end
-    	if self.noBad then for x,y in pairs(found) do if IsBad(x) and y > 1 then found = false; return end end end
-    end
-
-    local function SetResult()
-        local ok, t = {false,false,false}
-        GetTraits()
-        if found then
-            for i = 1,3 do
-                t = trait[i]
-                if t then if found[t] and found[t] > 1 then ok[i] = true end
-                else ok[i] = true end
-            end 
-            if ok[1] and ok[2] and ok[3] then
-                for nr,x in pairs(found) do if x < 2 then found[nr] = nil end end
-                table.insert(result,{plant,found})
-            end
-        end
-    end
-    
-    function self.GetReagentCombination()
-    	local size = #reagent
-        for x = 1,size do
-            for y = x+1, size do
-                plant = {x,y}
-                SetResult()
-                if self.three then
-                    for z = y+1, size do
-                        plant = {x,y,z}
-                        SetResult()
-                    end
-                end
-            end
-        end
-        for nr,x in pairs(result) do
-            print(nr..') Reagent-Numbers: '..x[1][1]..', '..x[1][2]..', '..(x[1][3] or '-'))
-            local t = nr..') Traits: '
-            for y,z in pairs(x[2]) do t = t..(y or '-')..' ['..z..'], ' end
-            print(t)
-            print('--')
-        end
-    end
-
-    local function GetPotion(row)
-        GetReagentCombination()
-        local rb, rs, slot3, traits, link, color = {}, {}, false, {}
-        local good, bad = {{1,1,1,1},{0,0.8,0,1},{0.2,1,0.2,1}}, {{1,1,1,1},{0.8,0,0,1},{1,0.2,0.2,1}}
-        
-        for x,_ in pairs(trait) do rb[x], rs[x] = GetReagentBagSlot(result[row][1][x]) end
-        rb[4], rs[4] = GetReagentBagSlot(solvent[self.selectedSolvent])
-        
-        if self.three and rb[3] and rs[3] then slot3 = true elseif not self.three then slot3 = true end
-            
-        if rb[4] and rs[4] and rb[1] and rs[1] and rb[2] and rs[2] and slot3 then
-            local _, icon = GetAlchemyResultingItemInfo(rb[4],rs[4],rb[1],rs[1],rb[2],rs[2],rb[3],rs[3])
-            link = GetAlchemyResultingItemLink(rb[4],rs[4],rb[1],rs[1],rb[2],rs[2],rb[3],rs[3])
-            for y,z in pairs(result[row][2]) do
-                if IsBad(y) then color = bad else color = good end
-                table.insert(traits,{self.GetTraitIcon(y),color[z]})
-            end
-            return true, zo_strformat('|t32:32:<<1>>|t <<C:2>>', icon, link), link, rb, rs, traits
-        else
-            for y,x in pairs(plant) do
-                local icon, _, link = self.GetReagent(x)
-                item = item..zo_strformat('|t32:32:<<1>>|t', icon)
-                color = color..zo_strformat('<<C:1>>', link)
-                if y < #plant then
-                    item = item..' + '
-                    color = color..'\n'
-                end
-            end
-            return false, item, color
-        end
-    end
-
-    function self.GetAllPotion()
-        for row,_ in ipairs(result) do
-            local isPotion, item, link, rb, rs, traits = GetPotion(row)
-            if isPotion then d(item) else d(item) end
-        end
-    end
-
-    return self
-end
-
-flask = CS.FLASK()
-flask.SetTraits({1,3,5})
-flask.GetReagentCombination()
---flask.GetAllPotion()
-
-
-	chest		'|H1:item:46117:1:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'
-	head		'|H1:item:46116:1:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'
-	legs		'|H1:item:46120:1:50:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0:0|h|h'
-	
-for styleItemIndex = 1, GetNumSmithingStyleItems() do
-    local itemName, _, _, meetsUsageRequirement, itemStyle = GetSmithingStyleItemInfo(styleItemIndex)
-    local itemLink = GetSmithingStyleItemLink(styleItemIndex, LINK_STYLE_DEFAULT)
-    if meetsUsageRequirement and itemStyle ~= ITEMSTYLE_UNIVERSAL then
-        local styleName = GetString("SI_ITEMSTYLE", itemStyle)
-        local associatedStone = zo_strformat(SI_TOOLTIP_ITEM_NAME, itemName)
-    end
-end
-
-
-
-----
-
 CraftStore = {
 	name = 'CraftStore4',
 	version = '4.00',
@@ -220,60 +9,24 @@ function CraftStore:PANEL()
 	self = {}
 	local WM = WINDOW_MANAGER
 	local CSP = CraftStore:PLAYER()
+	local CSL = CraftStore:LANGUAGE()
 	
 	function self:SetIcon(craft,line,trait)
 		if not craft or not line or not trait then return end
-		local CHAR = CSP:GetPlayer()
 		local traitname = GetString('SI_ITEMTRAITTYPE',GetSmithingResearchLineTraitInfo(craft,line,trait))
+		local known, store = CSP:GetTrait(craft,line,trait), CSP:GetStored(craft,line,trait)
+		local count, tip = CSP:GetTraitSummary(craft,line,trait)
 		local c = WM:GetControlByName('CS4_PanelCraft'..craft..'Line'..line..'Trait'..trait)
-		local known = CS.account.crafting.research[SELECTED_PLAYER][craft][line][trait] or false
-		local store = CS.account.crafting.stored[craft][line][trait] or { link = false, owner = false }
-		local now, tip = GetTimeStamp(), ''
-		local function CountTraits()
-			local count = 0
-			for x, trait in pairs(CS.account.crafting.research[SELECTED_PLAYER][craft][line]) do
-				if trait == true then count = count + 1 end
-			end
-			return count
-		end
-		for z, char in pairs(CSP:GetCharacters()) do
-			local val = CS.account.crafting.research[char][craft][line][trait] or false
-			if val == true then
-				tip = tip..'\n|t20:20:esoui/art/buttons/accept_up.dds|t |c00FF00'..char..'|r'
-			elseif val == false then
-				tip = tip..'\n|t20:20:esoui/art/buttons/decline_up.dds|t |cFF1010'..char..'|r'
-			elseif val and val > 0 then
-				if char == CURRENT_PLAYER then
-					local dur,remain = GetSmithingResearchLineTraitTimes(craft,line,trait)
-					tip = tip..'\n|t23:23:esoui/art/mounts/timer_icon.dds|t |c66FFCC'..char..' ('..CS.GetTime(remain)..')|r'
-				else
-					tip = tip..'\n|t23:23:esoui/art/mounts/timer_icon.dds|t |c66FFCC'..char..' ('..CS.GetTime(GetDiffBetweenTimeStamps(val,now))..')|r'
-				end
-			end
-		end
-		control:GetParent().data = { info = '|cFFFFFF'..traitname..'|r'..tip..'\n'..L.TT[6] }
+		c.data = { info = '|cFFFFFF'..traitname..'|r'..tip..'\n'..CSL:String(6) }
 		if known == false then
-			control:SetColor(1,0,0,1)
-			control:SetTexture('esoui/art/buttons/decline_up.dds')
-			if store.link and store.owner then
-				local isSet = GetItemLinkSetInfo(store.link)
-				local mark = true
-				if not CS.account.option[14] and isSet then mark = false end
-				if mark then 
-					tip = '\n|t20:20:esoui/art/buttons/pointsplus_up.dds|t |cE8DFAF'..store.owner..'|r'..tip
-					control:SetColor(1,1,1,1)
-					control:SetTexture('esoui/art/buttons/pointsplus_up.dds')
-					control:GetParent().data = { link = store.link, addline = {tip}, research = {craft,line,trait,store.owner} }
-				end
-			end
-		elseif known == true then
-			control:SetColor(0,1,0,1)
-			control:SetTexture('esoui/art/buttons/accept_up.dds')
-		else
-			control:SetColor(0.4,1,0.8,1)
-			control:SetTexture('esoui/art/mounts/timer_icon.dds')
-		end
-		WM:GetControlByName('CS_PanelCraft'..craft..'Line'..line..'Count'):SetText(CountTraits())
+			if store then
+				tip = '\n|t20:20:CraftStore4/stored.dds|t |cE8DFAF'..store.owner..'|r'..tip
+				c:SetNormalTexture('CraftStore4/stored.dds')
+				c.data = { link = store.link, addline = {tip} }
+			else c:SetNormalTexture('CraftStore4/unknown.dds') end
+		elseif known == true then c:SetNormalTexture('CraftStore4/known.dds')
+		else c:SetNormalTexture('CraftStore4/timer.dds') end
+		WM:GetControlByName('CS4_PanelCraft'..craft..'Line'..line..'Count'):SetText(count)
 	end
 	
 	return self
@@ -283,13 +36,16 @@ function CraftStore:PLAYER()
 	self = {}
 	local EM = EVENT_MANAGER
 	local SELF, CHAR = GetUnitName('player')
+	local CSPL = CraftStore:PANEL()
+	local CST = CraftStore:TRAITS()
 	
-	function self:Init()
+	function self:Init(version)
+		if not version then version = 1 end
 		local crafting = {CRAFTING_TYPE_BLACKSMITHING, CRAFTING_TYPE_CLOTHIER, CRAFTING_TYPE_WOODWORKING}
 		account_init = {
 			stock = {},
 			stored = {},
-			research = {},
+			option = {true,true,true,false},
 			player = {
 				race = zo_strformat('<<C:1>>',GetUnitRace('player')),
 				class = GetUnitClassId('player'),
@@ -303,7 +59,10 @@ function CraftStore:PLAYER()
 				capacity = 0,
 				training = 0,
 				anncounced = false,
-				crafting = {}
+				crafting = {},
+				research = {},
+				recipe = {},
+				style = {},
 			}
 		}
 		for _,craft in ipairs(crafting) do
@@ -315,13 +74,12 @@ function CraftStore:PLAYER()
 				for trait = 1, maxtraits do SetTrait(craft,line,trait) end
 			end
 		end
-		CraftStore.account = ZO_SavedVars:NewAccountWide('CS4_Account',1,nil,account_init)
-		CraftStore.character = ZO_SavedVars:New('CS4_Character',1,nil,character_init)
+		CraftStore.account = ZO_SavedVars:NewAccountWide('CS4_Account',version,nil,account_init)
+		CraftStore.character = ZO_SavedVars:New('CS4_Character',version,nil,character_init)
 		SetPlayerLevel()
 		SetPlayerMount()
 		SetPlayerSkill()
-		if CraftStore.account.mainchar then CHAR = CraftStore.account.mainchar
-		else CHAR = SELF end
+		if CraftStore.account.mainchar then CHAR = CraftStore.account.mainchar else CHAR = SELF end
 	end
 
 	function self:SetPlayer(player) CHAR = player end
@@ -386,13 +144,76 @@ function CraftStore:PLAYER()
 		CraftStore.account.research[SELF][craft][line][trait] = known
 	end
 
-	function self:GetTrait(craft,line,trait)
-		local t,_ = CraftStore.account[CHAR].research[craft][line][trait]
+	function self:GetTrait(craft,line,trait,player)
+		if not player then player = CHAR end
+		local t,_ = CraftStore.account[player].research[craft][line][trait] or false
 		if t ~= false and t ~= true	and t > 0 then _,t = GetSmithingResearchLineTraitTimes(craft,line,trait) end
 		return t
 	end	
 
-	local function SetStored(craft,line,trait)
+	local function GetTraitCount(craft,line)
+		local count = 0
+		for _,trait in pairs(CraftStore.account.research[CHAR][craft][line]) do
+			if trait == true then count = count + 1 end
+		end
+		return count
+	end
+
+	function GetTime(seconds)
+		if seconds and seconds > 0 then
+			local d = math.floor(seconds / 86400)
+			local h = math.floor((seconds - d * 86400) / 3600)
+			local m = math.floor((seconds - d * 86400 - h * 3600) / 60)
+			local s = math.floor((seconds - d * 86400 - h * 3600 - m * 60))
+			if d > 0 then return ('%ud %02u:%02u:%02u'):format(d,h,m,s)
+			else return ('%02u:%02u:%02u'):format(h,m,s) end
+		else return '|t20:20:CraftStore4/tick.dds|t' end
+	end
+	
+	function self:GetTraitSummary(craft,line,trait)
+		local count = self:GetTraitCount(craft,line)
+		for _,char in pairs(self:GetCharacters()) do
+			local val = self:GetTrait(craft,line,trait,char)
+			if val == true then tip = tip..'\n|t20:20:esoui/art/buttons/accept_up.dds|t |c00FF00'..char..'|r'
+			elseif val == false then tip = tip..'\n|t20:20:esoui/art/buttons/decline_up.dds|t |cFF1010'..char..'|r'
+			elseif val and val > 0 then tip = tip..'\n|t23:23:esoui/art/mounts/timer_icon.dds|t |c66FFCC'..char..' ('..GetTime(val)..')|r' end
+		end
+		return count, tip
+	end
+
+	local function SetStored(_,_,data)
+		if data.bagId > 2 then return end
+		local link, uid = GetItemLink(data.bagId,data.slotId), Id64ToString(data.uniqueId)
+		local a1, a2 = GetItemLinkStacks(link)
+		data.cs_link = link
+		if not CraftStore.account.stock[uid] then CraftStore.account.stock[uid] = {} end
+		if a1 > 0 then CraftStore.account.stock[uid][SELF] = a1 else CraftStore.account.stock[uid][SELF] = nil end
+		if a2 > 0 then CraftStore.account.stock[uid][1] = a2 else CraftStore.account.stock[uid][1] = nil end
+
+		local craft,line,trait = CST:FindTrait(link)
+		local store = CraftStore.account.stored[craft][line][trait]
+		
+		local function CompareItem(link1,link2)
+			if not store.link then return true else
+			if GetItemLinkQuality(link1) < GetItemLinkQuality(link2) then return true end
+			if GetItemLinkRequiredLevel(link1) < GetItemLinkRequiredLevel(link2) then return true end
+			if GetItemLinkRequiredVeteranRank(link1) < GetItemLinkRequiredVeteranRank(link2) then return true end
+			return false
+		end
+		
+		if craft and line and trait then
+			if action == 'added' then
+				local owner = SELF
+				if data.bagId == BAG_BANK then owner = CSL:String(bank) end
+				if CompareItem(link, store.link) then
+					CraftStore.account.stored[craft][line][trait] = { link = link, owner = owner, id = data.uid }
+				end
+			end
+			if action == 'removed' and CS.account.crafting.stored[craft][line][trait].id == data.uid then
+				CraftStore.account.stored[craft][line][trait] = nil
+			end
+			CSPL:SetIcon(craft,line,trait)
+		end
 	end
 	
 	function self:GetStored(craft,line,trait)
@@ -408,8 +229,8 @@ function CraftStore:PLAYER()
 	EM:RegisterEvent('CraftStore_MountImproved', EVENT_RIDING_SKILL_IMPROVEMENT, SetPlayerMount)
 	ZO_PreHook('PutPointIntoSkillAbility', SetPlayerSkill)
 	ZO_PreHook('ChooseAbilityProgressionMorph', SetPlayerSkill)
-	SHARED_INVENTORY:RegisterCallback('SlotAdded',OnSlotAdded)
-	SHARED_INVENTORY:RegisterCallback('SlotRemoved',OnSlotRemoved)
+	SHARED_INVENTORY:RegisterCallback('SlotAdded',SetStored)
+	SHARED_INVENTORY:RegisterCallback('SlotRemoved',UnsetStored)
 	-- ZO_PreHook('ZO_Skills_PurchaseAbility', SetPlayerSkill)
 	-- ZO_PreHook('ZO_Skills_UpgradeAbility', SetPlayerSkill)
 	-- ZO_PreHook('ZO_Skills_MorphAbility', SetPlayerSkill)
@@ -532,6 +353,17 @@ function CraftStore:TRAITS()
 			end
 		end
 		return false
+	end
+	
+	function self:IsTraitNeeded(link)
+		local needer = ''
+		local craft, line, trait = self:FindTrait(link)
+		if craft and line and trait then
+			for _,char in pairs(self:GetCharacters()) do
+				if not 
+			end
+		end
+		return needer
 	end
 	
 	return self
