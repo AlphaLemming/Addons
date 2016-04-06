@@ -1,211 +1,116 @@
-AlphaLoot = {
-	name = 'AlphaLoot',
-	version = '4.00',
-	author = 'AlphaLemming',
-	init = false
-}
-local EM = EVENT_MANAGER
-local idle, al_main, al_show = 0
+local WM = WINDOW_MANAGER
+local cs_tt = CraftStore:TOOLTIP()
+local _,_,maxtrait = GetSmithingResearchLineInfo(CRAFTING_TYPE_BLACKSMITHING,1)
 
-function AlphaLoot:SHOW()
-	self = {}
-	local loot, reset
-	local slide = 4000
-	local top = -GuiRoot:GetHeight()/2-100
-	
-	local function ClearControl(control)
-		control:SetHidden(true)
-		control:ClearAnchors()
-	end
-	
-	local function DrawLoot(control)
-		local container = AlphaLootFrame:CreateControl('AlphaLoot'..control:GetNextControlId(),CT_CONTROL)
-		local icon = container:CreateControl('$(parent)Icon',CT_TEXTURE)
-		local bag = container:CreateControl('$(parent)Bag',CT_TEXTURE)
-		local bank = container:CreateControl('$(parent)Bank',CT_TEXTURE)
-		local count = container:CreateControl('$(parent)Count',CT_LABEL)
-		local bagcount = container:CreateControl('$(parent)BagCount',CT_LABEL)
-		local bankcount = container:CreateControl('$(parent)BankCount',CT_LABEL)
-		local name = container:CreateControl('$(parent)Name',CT_LABEL)
-		container:SetAnchor(128,AlphaLootFrame,128,0,0)
-		icon:SetAnchor(3,container,3,0,0)
-		icon:SetDimensions(40,40)
-		count:SetAnchor(9,icon,9,5,5)
-		count:SetFont('ALFontSmall')
-		count:SetColor(1,1,1,1)
-		name:SetAnchor(2,icon,8,10,0)
-		name:SetFont('ALFontBig')
-		bag:SetAnchor(2,name,8,10,0)
-		bag:SetTexture('esoui/art/icons/servicetooltipicons/gamepad/gp_servicetooltipicon_bagvendor.dds')
-		bag:SetDimensions(24,24)
-		bag:SetHidden(true)
-		bagcount:SetAnchor(6,bag,6,5,5)
-		bagcount:SetFont('ALFontSmall')
-		bagcount:SetColor(1,0.9,0.7,1)
-		bank:SetAnchor(2,bagcount,8,10,0)
-		bank:SetTexture('esoui/art/icons/servicetooltipicons/gamepad/gp_servicetooltipicon_banker.dds')
-		bank:SetDimensions(24,24)
-		bank:SetHidden(true)
-		bankcount:SetAnchor(6,bank,6,5,5)
-		bankcount:SetFont('ALFontSmall')
-		bankcount:SetColor(1,0.9,0.7,1)
-		return container
-	end
-	
-	local function DrawGold(control)
-		local container = AlphaLootFrame:CreateControl('AlphaLoot'..control:GetNextControlId(),CT_CONTROL)
-		local icon = container:CreateControl('$(parent)Icon',CT_TEXTURE)
-		local count = container:CreateControl('$(parent)Count',CT_LABEL)
-		container:SetAnchor(128,AlphaLootFrame,128,0,0)
-		icon:SetAnchor(3,container,3,0,0)
-		icon:SetDimensions(40,40)
-		icon:SetTexture('esoui/art/icons/item_generic_coinbag.dds')
-		count:SetAnchor(6,icon,6,5,5)
-		count:SetFont('ALFontSmall')
-		count:SetColor(1,1,0,1)
-		return container
-	end
+local function ToChat(text) StartChatInput(CHAT_SYSTEM.textEntry:GetText()..text) end
 
-	local function DrawXP(control)
-		local container = AlphaLootFrame:CreateControl('AlphaLoot'..control:GetNextControlId(),CT_CONTROL)
-		local name = container:CreateControl('$(parent)Name',CT_LABEL)
-		container:SetAnchor(128,AlphaLootFrame,128,0,0)
-		name:SetAnchor(3,container,3,0,0)
-		name:SetFont('ALFontBig')
-		name:SetColor(0,1,0,1)
-		return container
-	end
-
-	local function Slide(c,x1,y1,x2,y2,duration)
-		local a = ANIMATION_MANAGER:CreateTimeline()
-		local s = a:InsertAnimation(ANIMATION_TRANSLATE,c)
-		local fi = a:InsertAnimation(ANIMATION_ALPHA,c)
-		local fo = a:InsertAnimation(ANIMATION_ALPHA,c,duration-500)
-		fi:SetAlphaValues(0,1)
-		fi:SetDuration(100)
-		s:SetStartOffsetX(x1)
-		s:SetStartOffsetY(y1)
-		s:SetEndOffsetX(x2)
-		s:SetEndOffsetY(y2)
-		s:SetDuration(duration)
-		fo:SetAlphaValues(1,0)
-		fo:SetDuration(500)
-		a:PlayFromStart()
-	end
-	
-	function self:ShowLoot(link,count,icon,bag,bank)
-		loot,reset = ZO_ObjectPool:New(DrawLoot,ClearControl)
-		loot:GetNamedChild('Icon'):SetTexture(icon)
-		loot:GetNamedChild('Name'):SetText(link)
-		if count > 1 then loot:GetNamedChild('Count'):SetText(count) end
-		if bag > 1 then
-			loot:GetNamedChild('Bag'):SetHidden(false)
-			loot:GetNamedChild('BagCount'):SetText(bag)
-		end
-		if bank > 1 then
-			loot:GetNamedChild('Bank'):SetHidden(false)
-			loot:GetNamedChild('BankCount'):SetText(bank)
-		end
-		Slide(loot,0,0,0,top,slide)
-		zo_callLater(function() loot:ReleaseObject(reset) end, slide+10)
-	end
-	
-	function self:ShowGold(count)
-		loot,reset = ZO_ObjectPool:New(DrawGold,ClearControl)
-		loot:GetNamedChild('Count'):SetText(count)
-		Slide(loot,200,0,200,top,slide)
-		zo_callLater(function() loot:ReleaseObject(reset) end, slide+10)
-	end
-	
-	function self:ShowXP(count)
-		loot,reset = ZO_ObjectPool:New(DrawXP,ClearControl)
-		loot:GetNamedChild('Name'):SetText(count)
-		Slide(loot,-200,0,-200,top,slide)
-		zo_callLater(function() loot:ReleaseObject(reset) end, slide+10)
-	end
-
-	function self:ShowGXP(name,count)
-		loot,reset = ZO_ObjectPool:New(DrawXP,ClearControl)
-		loot:GetNamedChild('Name'):SetText(name..': +'..count)
-		Slide(loot,-200,0,-200,top,slide)
-		zo_callLater(function() loot:ReleaseObject(reset) end, slide+10)
-	end
-
-	return self
+local function SetResearch(craft,line,trait)
 end
 
-function AlphaLoot:MAIN()
-	self = {}
-	local bagCache = {}
-	local xpCache = {}
-	local queue = {}
-
-	local function HandleLoot(_,bag,slot,new)
-		if bag ~= BAG_BACKPACK then return end
-		if new then
-			local icon,_,price,_,_,et,is,q = GetItemInfo(BAG_BACKPACK,slot)
-			local link = GetItemLink(BAG_BACKPACK,slot)
-			local bag, bank = GetItemLinkStacks(link)
-			queue[link] = {GetTimeStamp(),bag - bagCache[slot],icon,bag,bank}
-			zo_callLater(function() bagCache[slot] = bag end,200)
-		end
-	end
-	
-	local function HandleGold(_,new,old)
-		local gold = new - old
-		if gold > 0 then queue['gold'] = {GetGameTimeMilliseconds(),gold} end
-	end
-
-	local function HandleXP(_,_,_,old,new)
-		local xp = new - old
-		if xp > 0 then queue['xp'] = {GetGameTimeMilliseconds(),xp} end
-		for x = 1, GetNumSkillLines(SKILL_TYPE_GUILD) do
-			local _,_,xp = GetSkillLineXPInfo(SKILL_TYPE_GUILD,x)
-			local name = GetSkillLineInfo(SKILL_TYPE_GUILD,x)
-			local nxp = xp - xpCache[name]
-			if nxp > 0 then
-				queue['gxp'] = {GetGameTimeMilliseconds(),name,nxp}
-				zo_callLater(function() xpCache[name] = nxp end,200)
-			end
-		end
-	end
-	
-	function self:GetQueue() return queue end
-	function self:SetQueue(nr) queue[nr] = nil end
-	
-	for slot = 0, GetBagSize(BAG_BACKPACK) - 1 do bagCache[slot] = GetItemTotalCount(BAG_BACKPACK,slot) end
-	for x = 1, GetNumSkillLines(SKILL_TYPE_GUILD) do
-		local _,_,xp = GetSkillLineXPInfo(SKILL_TYPE_GUILD,x)
-		xpCache[GetSkillLineInfo(SKILL_TYPE_GUILD,x)] = xp
-	end
-	
-	EM:RegisterForEvent('AlphaLoot_HandleLoot', EVENT_SINGLE_SLOT_UPDATE, HandleLoot)
-	EM:RegisterForEvent('AlphaLoot_HandleGold', EVENT_MONEY_CHANGE, HandleGold)
-	EM:RegisterForEvent('AlphaLoot_HandleXP', EVENT_EXPERIENCE_GAIN, HandleXP)
-	
-	return self
+local function PostTrait(craft,line,trait)
 end
 
-function AlphaLoot:Queue()
-	if AlphaLoot.init then
-		for link,loot in pairs(al_main:GetQueue()) do
-			local gtms = GetGameTimeMilliseconds()
-			if gtms >= loot[1] + 150 and gtms >= idle then
-				if link == 'xp' then al_show:ShowXP(loot[2])
-				elseif link == 'gxp' then al_show:ShowGXP(loot[2],loot[3])
-				elseif link == 'gold' then al_show:ShowGold(loot[2])
-				else al_show:ShowLoot(link,loot[2],loot[3],loot[4],loot[5]) end
-				al_main:SetQueue(link)
-				idle = gtms + 25
-			end
-		end
+local function DrawColumn(craft,line,parent)
+	local name, icon = GetSmithingResearchLineInfo(craft,line)
+	local craftname = GetSkillLineInfo(GetCraftingSkillLineIndices(craft))
+	local c = WM:CreateControl('$(parent)Line'..line, parent, CT_BUTTON)
+	c:SetAnchor(3,parent,3,(line-1)*26,0)
+	c:SetDimensions(29,maxtrait*26+63)
+	c:SetNormalTexture('CraftStore4/dds/grey.dds')
+	c:SetMouseOverTexture('CraftStore4/dds/over.dds')
+	local x = WM:CreateControl('$(parent)Texture', c, CT_TEXTURE)
+	x:SetAnchor(1,c,1,0,2)
+	x:SetDimensions(27,27)
+	x:SetTexture(icon)
+	for trait = 1, maxtrait do
+		local t = WM:CreateControl('$(parent)Trait'..trait, c, CT_BUTTON)
+		t:SetAnchor(3,c,3,2,33+(trait-1)*26)
+		t:SetDimensions(25,25)
+		t:SetMouseOverTexture('CraftStore4/dds/over.dds')
+		t:SetClickSound('Click')
+		t:SetEnableMouseButton(2,true)
+		t:SetHandler('OnMouseEnter', function(self) cs_tt:ShowTooltip(self) end)
+		t:SetHandler('OnMouseExit', function(self) cs_tt:HideTooltip(self) end)
+		t:SetHandler('OnMouseDown', function(self,button) if button == 1 then SetResearch(craft,line,trait) else PostTrait(craft,line,trait) end end)
 	end
+	local l = WM:CreateControl('$(parent)Count', c, CT_BUTTON)
+	l:SetAnchor(4,c,4,0,-2)
+	l:SetDimensions(25,25)
+	l:SetHorizontalAlign(1)
+	l:SetVerticalAlign(1)
+	l:SetFont('CS4Font')
+	l:SetNormalFontColor(1,1,1,1)
+	l:SetNormalTexture('CraftStore4/dds/dark.dds')
+	local b = WM:CreateControl('$(parent)Blend', c, CT_BUTTON)
+	b:SetAnchor(3,c,3,0,32)
+	b:SetDimensions(29,maxtrait*26+31)
+	b:SetNormalTexture('CraftStore4/dds/grey.dds')
+	b:SetMouseOverTexture('CraftStore4/dds/over.dds')
+	b:SetHidden(true)
+	local x = WM:CreateControl('$(parent)Texture', b, CT_TEXTURE)
+	x:SetAnchor(128,b,128,0,0)
+	x:SetDimensions(27,27)
+	x:SetTexture('CraftStore4/dds/disabled.dds')
 end
 
-EM:RegisterForEvent('AlphaLoot_AddonLoad', EVENT_ADD_ON_LOADED, function(_,name)
-    if name ~= 'AlphaLoot' then return end
-	al_main = AlphaLoot:MAIN()
-	al_show = AlphaLoot:SHOW()
-	AlphaLoot.init = true
-	EM:UnregisterForEvent('AlphaLoot_AddonLoad', EVENT_ADD_ON_LOADED)
-end)
+local function DrawTraitRow(line,trait,nr,y)
+	local tr = WM:CreateControl('CS4_Armor_TraitRow'..nr, CS4_Panel, CT_BUTTON)
+	local _,desc = GetSmithingResearchLineTraitInfo(CRAFTING_TYPE_BLACKSMITHING,line,trait)
+	local _,name,icon = GetSmithingTraitItemInfo(trait + 1)
+	tr:SetAnchor(3,CS4_Panel,6,10,y+(nr-1)*26)
+	tr:SetDimensions(153,25)
+	tr:SetText(zo_strformat('<<C:1>>',name)..' |t25:25:'..icon..'|t ')
+	tr:SetHorizontalAlign(2)
+	tr:SetVerticalAlign(1)
+	tr:SetFont('CS4Font')
+	tr:SetNormalFontColor(1,1,1,1)
+	tr:SetMouseOverFontColor(1,0.66,0.2,1)
+	tr:SetNormalTexture('CraftStore4/dds/grey.dds')
+	tr:SetHandler('OnMouseEnter',cs_tt:ShowTooltip())
+	tr:SetHandler('OnMouseExit',cs_tt:HideTooltip())
+	tr.cs_data = { info = desc }
+end
+
+function self:DrawMatrix()
+	local craft
+	local cs_trait = CraftStore:TRAIT()
+
+	for trait,nr in pairs(cs_trait:GetArmorTraits()) do DrawTraitRow(8,trait,nr,69) end
+	for trait,nr in pairs(cs_trait:GetWeaponTraits()) do DrawTraitRow(1,trait,nr,369) end
+
+	craft = CRAFTING_TYPE_CLOTHIER
+	
+	local c1 = CreateControl('CS4_Block1_Craft'..craft, CS4_Panel, CT_CONTROL)
+	c1:SetAnchor(3,CS4_Armor_TraitRow1,9,1,-32)
+	c1:SetResizeToFitDescendents(true)
+	for line = 1, 7 do DrawColumn(craft,line,c1) end
+
+	local c2 = CreateControl('CS4_Block2_Craft'..craft, CS4_Panel, CT_CONTROL)
+	c2:SetAnchor(3,c1,9,5,0)
+	c2:SetResizeToFitDescendents(true)
+	for line = 8, 14 do DrawColumn(craft,line,c2) end
+	
+	craft = CRAFTING_TYPE_BLACKSMITHING
+	
+	local c3 = CreateControl('CS4_Block1_Craft'..craft, CS4_Panel, CT_CONTROL)
+	c3:SetAnchor(3,c2,9,5,0)
+	c3:SetResizeToFitDescendents(true)
+	for line = 8, 14 do DrawColumn(craft,line,c3) end
+
+	local c4 = CreateControl('CS4_Block2_Craft'..craft, CS4_Panel, CT_CONTROL)
+	c4:SetAnchor(3,CS4_Weapon_TraitRow1,9,5,-32)
+	c4:SetResizeToFitDescendents(true)
+	for line = 1, 7 do DrawColumn(craft,line,c4) end
+	
+	craft = CRAFTING_TYPE_WOODWORKING
+	
+	local c5 = CreateControl('CS4_Block1_Craft'..craft, CS4_Panel, CT_CONTROL)
+	c5:SetAnchor(3,c3,9,5,0)
+	c5:SetResizeToFitDescendents(true)
+	DrawColumn(craft,6,c5) end
+
+	local c6 = CreateControl('CS4_Block2_Craft'..craft, CS4_Panel, CT_CONTROL)
+	c6:SetAnchor(3,c4,9,5,0)
+	c6:SetResizeToFitDescendents(true)
+	for line = 1, 5 do DrawColumn(craft,line,c6) end
+end
