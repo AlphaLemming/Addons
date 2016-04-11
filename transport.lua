@@ -16,7 +16,7 @@ local function ShowLine(craft,line,trait)
 	for _,x in pairs(block) do
 		local c = WM:GetControlByName('CS4_ResearchBlock'..x)
 		for z = 1, GetNumChildren(c) do
-			c:GetChild(z):GetChild(trait):SetMouseOver(true)
+			c:GetChild(z):GetChild(trait):IsHandlerSet('OnMouseEnter',true)
 		end
 	end
 end
