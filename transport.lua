@@ -1,7 +1,7 @@
 <GuiXml>
     <Controls>
         <TopLevelControl hidden="true" name="CS4_Rune">
-            <Anchor point="8" relativePoint="8" relativeTo="GuiRoot" />
+            <Anchor point="2" relativePoint="2" relativeTo="GuiRoot" />
             <Dimensions x="529" y="800" />
             <Controls>
  				<Backdrop name="$(parent)BG" centerColor="181818" edgeColor="00000000">
